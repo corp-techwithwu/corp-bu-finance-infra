@@ -1,18 +1,99 @@
 targetScope = 'subscription'
 
-var workload = 'finance'
-var environment = 'prod'
-var location = 'centralus'
-var instanceIndex = 1
-var extraTags = {}
-var vnetAddressPrefix = '10.1.0.0/16'
-var hubSubscriptionId = '7f493ff6-603b-4254-a6bf-e9acfc665866'
-var hubResourceGroupName = 'rg-connectivity-hub-prod'
-var hubVnetName = 'vnet-platform-connectivity-prod'
-var hubVnetId = '/subscriptions/${hubSubscriptionId}/resourceGroups/${hubResourceGroupName}/providers/Microsoft.Network/virtualNetworks/${hubVnetName}'
+@description('Workload identifier.')
+@minLength(2)
+@maxLength(16)
+param workload string = 'finance'
 
-// padLeft requires a string
-var nameSeed = '${workload}-${environment}-${padLeft(string(instanceIndex), 2, '0')}'
+@description('Target environment name.')
+@allowed([
+  'dev'
+  'test'
+  'staging'
+  'prod'
+])
+param environment string = 'prod'
+
+@description('Azure region for deployment.')
+param location string = 'centralus'
+
+@description('Deployment stack name.')
+param stackName string = 'stack-${workload}-${environment}'
+
+@description('Instance index for naming.')
+@minValue(1)
+param instanceIndex int = 1
+
+@description('Spoke VNet CIDR.')
+param vnetAddressPrefix string = '10.1.0.0/16'
+
+@description('Subnets configuration for spoke VNet.')
+param subnets array = [
+  {
+    name: 'snet-web'
+    addressPrefix: '10.1.1.0/24'
+    delegation: 'Microsoft.Web/serverFarms'
+  }
+  {
+    name: 'snet-api'
+    addressPrefix: '10.1.2.0/24'
+    delegation: 'Microsoft.Web/serverFarms'
+  }
+  {
+    name: 'snet-pe'
+    addressPrefix: '10.1.3.0/24'
+  }
+]
+
+@description('Hub subscription ID.')
+param hubSubscriptionId string = '7f493ff6-603b-4254-a6bf-e9acfc665866'
+
+@description('Hub resource group name.')
+param hubResourceGroupName string = 'rg-connectivity-hub-prod'
+
+@description('Hub VNet name.')
+param hubVnetName string = 'vnet-platform-connectivity-prod'
+
+@description('App Service Plan SKU name.')
+param appServicePlanSku string = 'B1'
+
+@description('SQL Database name.')
+param sqlDatabaseName string = 'sqldb-finance-prod'
+
+@description('Entra ID Admin Object ID for SQL Server.')
+param sqlAdminObjectId string
+
+@description('Entra ID Admin Login/Name for SQL Server.')
+param sqlAdminLogin string
+
+@description('Web App Entra ID Client ID.')
+param webAuthAppClientId string
+
+@description('Web App Entra ID Client Secret or Key Vault URI reference.')
+@secure()
+param webAuthAppSecret string = ''
+
+@description('API App Entra ID Client ID.')
+param apiAuthAppClientId string
+
+@description('API App Entra ID Client Secret or Key Vault URI reference.')
+@secure()
+param apiAuthAppSecret string = ''
+
+@description('Additional tags merged with baseline tags.')
+param extraTags object = {}
+
+var paddedIndex = padLeft(string(instanceIndex), 2, '0')
+var nameSeed = '${workload}-${environment}-${paddedIndex}'
+var rgName = 'rg-${nameSeed}'
+var planName = 'asp-${nameSeed}'
+var webAppName = 'app-web-${nameSeed}'
+var apiAppName = 'app-api-${nameSeed}'
+var sqlServerName = 'sql-${nameSeed}'
+var sqlPeName = 'pe-sql-${nameSeed}'
+var apiPeName = 'pe-api-${nameSeed}'
+
+var hubVnetId = '/subscriptions/${hubSubscriptionId}/resourceGroups/${hubResourceGroupName}/providers/Microsoft.Network/virtualNetworks/${hubVnetName}'
 
 var baselineTags = union(extraTags, {
   workload: workload
@@ -22,7 +103,7 @@ var baselineTags = union(extraTags, {
 })
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'rg-${nameSeed}'
+  name: rgName
   location: location
   tags: baselineTags
 }
@@ -34,73 +115,103 @@ module network './modules/network.bicep' = {
     location: location
     nameSeed: nameSeed
     vnetAddressPrefix: vnetAddressPrefix
+    subnets: subnets
     hubVnetId: hubVnetId
     hubVnetName: hubVnetName
     tags: baselineTags
   }
 }
 
+var webSubnetId = filter(network.outputs.subnets, s => s.name == 'snet-web')[0].id
+var apiSubnetId = filter(network.outputs.subnets, s => s.name == 'snet-api')[0].id
+var peSubnetId = filter(network.outputs.subnets, s => s.name == 'snet-pe')[0].id
+
 module sqlDnsZone './modules/privateDns.bicep' = {
-  name: 'sqlDnsZone'
+  name: 'dns-sql-${nameSeed}'
+  scope: rg
   params: {
-    dnsZoneName:  'privatelink${environment().suffixes.sqlServerHostname}'
-    vnetId: vnetModule.outputs.virtualNetworkId 
+    dnsZoneName: 'privatelink${environment().suffixes.sqlServerHostname}'
+    vnetId: network.outputs.vnetId
+    tags: baselineTags
   }
 }
 
-//Create the private dns zone for App Service private endpoint
 module appServiceDnsZone './modules/privateDns.bicep' = {
-  name: 'appServiceDnsZone'
+  name: 'dns-app-${nameSeed}'
+  scope: rg
   params: {
-    dnsZoneName:  'privatelink.azurewebsites.net'
-    vnetId: vnetModule.outputs.virtualNetworkId 
+    dnsZoneName: 'privatelink.azurewebsites.net'
+    vnetId: network.outputs.vnetId
+    tags: baselineTags
   }
 }
 
-//Create the SQL Server private endpoint
-module sqlPrivateEndPoint './modules/privateEndPoint.bicep' = {
-  name: sqlPrivateEndpointName
-  params: {
-    location: location
-    dnsZoneId: sqlDnsZone.outputs.privateDnsId
-    privateEndpointName: sqlPrivateEndpointName
-    subnetId: privateEndpointSubnet.id
-    group: 'sqlServer'
-    resourceId: sqlServerModule.outputs.serverId
-  }
-}
-
-//Create the API App Service private endpoint
-module apiAppPrivateEndPoint './modules/privateEndPoint.bicep' = {
-  name: apiAppPrivateEndpointName
-  params: {
-    location: location
-    dnsZoneId: appServiceDnsZone.outputs.privateDnsId
-    privateEndpointName: apiAppPrivateEndpointName
-    subnetId: privateEndpointSubnet.id
-    group: 'sites'
-    resourceId: apiAppModule.outputs.appId
-  }
-}
-
-//Create the App Service Plan
 module planModule './modules/appServicePlan.bicep' = {
-  name: planName
+  name: 'plan-${nameSeed}'
+  scope: rg
   params: {
     location: location
     planName: planName
+    skuName: appServicePlanSku
+    tags: baselineTags
   }
 }
 
-//Create the Web UI App Service
+module sqlServerModule './modules/sqlServer.bicep' = {
+  name: 'sqlsrv-${nameSeed}'
+  scope: rg
+  params: {
+    location: location
+    sqlServerName: sqlServerName
+    sqlAdminObjectId: sqlAdminObjectId
+    sqlAdminLogin: sqlAdminLogin
+    tags: baselineTags
+  }
+}
+
+module databaseModule './modules/sqlDatabase.bicep' = {
+  name: 'sqldb-${nameSeed}'
+  scope: rg
+  params: {
+    location: location
+    sqlServerName: sqlServerModule.outputs.serverName
+    databaseName: sqlDatabaseName
+    tags: baselineTags
+  }
+}
+
+module apiAppModule './modules/appService.bicep' = {
+  name: 'api-${nameSeed}'
+  scope: rg
+  params: {
+    location: location
+    appName: apiAppName
+    planId: planModule.outputs.planId
+    subnetId: apiSubnetId
+    connectionStrings: [
+      {
+        name: 'SampleApiContext'
+        connectionString: 'Server=tcp:${sqlServerModule.outputs.serverFullyQualifiedDomainName},1433;Initial Catalog=${databaseModule.outputs.databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";'
+        type: 'SQLAzure'
+      }
+    ]
+    authClientId: apiAuthAppClientId
+    authClientSecret: apiAuthAppSecret
+    isApi: true
+    tags: baselineTags
+  }
+}
+
 module webAppModule './modules/appService.bicep' = {
-  name: webAppName
+  name: 'web-${nameSeed}'
+  scope: rg
   params: {
     location: location
     appName: webAppName
     planId: planModule.outputs.planId
-    subnetId: webAppSubnet.id
-    appSettings: [{
+    subnetId: webSubnetId
+    appSettings: [
+      {
         name: 'ApiUri'
         value: 'https://${apiAppModule.outputs.appUrl}'
       }
@@ -111,45 +222,40 @@ module webAppModule './modules/appService.bicep' = {
     ]
     authClientId: webAuthAppClientId
     authClientSecret: webAuthAppSecret
+    isApi: false
+    tags: baselineTags
   }
 }
 
-//Create the API App Service
-module apiAppModule './modules/appService.bicep' = {
-  name: apiAppName
+module sqlPrivateEndpoint './modules/privateEndpoint.bicep' = {
+  name: 'pe-sql-${nameSeed}'
+  scope: rg
   params: {
     location: location
-    appName: apiAppName
-    planId: planModule.outputs.planId
-    subnetId: apiAppSubnet.id
-    connectionStrings: [{
-      connectionString: 'Server=tcp:${sqlServerModule.outputs.serverFullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication="Active Directory Default";'
-      name: 'SampleApiContext'
-      type: 'SQLAzure'
-    }]
-    authClientId: apiAuthAppClientId
-    authClientSecret: apiAuthAppSecret
-    isApi: true
+    privateEndpointName: sqlPeName
+    subnetId: peSubnetId
+    resourceId: sqlServerModule.outputs.serverId
+    groupId: 'sqlServer'
+    dnsZoneId: sqlDnsZone.outputs.privateDnsId
+    tags: baselineTags
   }
 }
 
-//Create the SQL Server
-module sqlServerModule './modules/sqlServer.bicep' = {
-  name: sqlServerName
+module apiAppPrivateEndpoint './modules/privateEndpoint.bicep' = {
+  name: 'pe-api-${nameSeed}'
+  scope: rg
   params: {
     location: location
-    sqlServerName: sqlServerName
-    sqlAdminObjectId: sqlAdminObjectId
-    alreadyCreated: sqlExists
+    privateEndpointName: apiPeName
+    subnetId: peSubnetId
+    resourceId: apiAppModule.outputs.appId
+    groupId: 'sites'
+    dnsZoneId: appServiceDnsZone.outputs.privateDnsId
+    tags: baselineTags
   }
 }
 
-//Create the SQL Database
-module databaseModule './modules/sqlDatabase.bicep' = {
-  name: sqlDatabaseName
-  params: {
-    location: location
-    sqlServerName: sqlServerModule.outputs.serverName
-    databaseName: sqlDatabaseName
-  }
-}
+output resourceGroupName string = rg.name
+output webAppUrl string = 'https://${webAppModule.outputs.appUrl}'
+output apiAppUrl string = 'https://${apiAppModule.outputs.appUrl}'
+output stackName string = stackName

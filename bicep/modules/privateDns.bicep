@@ -1,16 +1,27 @@
-param vnetId string
-
+@description('Private DNS Zone name (e.g., privatelink.database.windows.net).')
 param dnsZoneName string
 
+@description('Virtual Network resource ID to link to the Private DNS Zone.')
+param vnetId string
 
-resource privateDns 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+@description('Enable auto-registration in the Private DNS Zone.')
+param registrationEnabled bool = false
+
+@description('Tags applied to the Private DNS Zone.')
+param tags object = {}
+
+var vnetName = last(split(vnetId, '/'))
+
+resource privateDns 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   name: dnsZoneName
   location: 'global'
-  resource blobStoragePrivateDnsVnetLink 'virtualNetworkLinks' = {
-    name: dnsZoneName
+  tags: tags
+
+  resource vnetLink 'virtualNetworkLinks' = {
+    name: 'link-${vnetName}'
     location: 'global'
     properties: {
-      registrationEnabled: false
+      registrationEnabled: registrationEnabled
       virtualNetwork: {
         id: vnetId
       }
@@ -18,4 +29,5 @@ resource privateDns 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   }
 }
 
+@description('Resource ID of the Private DNS Zone.')
 output privateDnsId string = privateDns.id
