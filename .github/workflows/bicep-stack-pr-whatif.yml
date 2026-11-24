@@ -1,0 +1,164 @@
+name: Bicep Stack What-If (PR)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/workflows/bicep-stack-pr-whatif.yml'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  actions: read
+
+env:
+  STACK_NAME: stack-finance-prod
+  LOCATION: centralus
+  TEMPLATE_FILE: bicep/main.bicep
+  PARAMETERS_FILE: bicep/main.prod.bicepparam
+
+jobs:
+  what-if:
+    runs-on: ubuntu-latest
+    environment: prod-whatif
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate & Lint Bicep Template
+        shell: bash
+        run: |
+          az bicep build --file "${{ env.TEMPLATE_FILE }}" --outfile /tmp/main.json
+
+      - name: Run az stack sub what-if
+        id: whatif
+        shell: bash
+        run: |
+          set -o pipefail
+
+          WHATIF_CMD="az stack sub what-if \
+            --name \"${{ env.STACK_NAME }}\" \
+            --location \"${{ env.LOCATION }}\" \
+            --template-file \"${{ env.TEMPLATE_FILE }}\" \
+            --parameters \"${{ env.PARAMETERS_FILE }}\" \
+            --action-on-unmanage detachAll"
+
+          echo "command=$WHATIF_CMD" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "\$ $WHATIF_CMD"
+            echo ""
+            az stack sub what-if \
+              --name "${{ env.STACK_NAME }}" \
+              --location "${{ env.LOCATION }}" \
+              --template-file "${{ env.TEMPLATE_FILE }}" \
+              --parameters "${{ env.PARAMETERS_FILE }}" \
+              --action-on-unmanage detachAll 2>&1
+          } | tee /tmp/whatif-full.txt
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          jq -n \
+            --arg pr_number "${{ github.event.pull_request.number }}" \
+            --arg head_sha "${{ github.event.pull_request.head.sha }}" \
+            --arg run_url "$RUN_URL" \
+            --arg command "$WHATIF_CMD" \
+            --rawfile plan /tmp/whatif-full.txt \
+            '{
+              pr_number: ($pr_number | tonumber),
+              head_sha: $head_sha,
+              run_url: $run_url,
+              command: $command,
+              plan: $plan
+            }' > /tmp/whatif-payload.json
+
+      - name: Upload What-If Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-${{ github.event.pull_request.number }}-whatif
+          path: |
+            /tmp/whatif-full.txt
+            /tmp/whatif-payload.json
+          retention-days: 14
+
+      - name: Post or Update PR Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const payload = JSON.parse(fs.readFileSync('/tmp/whatif-payload.json', 'utf8'));
+            const marker = '<!-- bicep-stack-whatif-comment -->';
+
+            // GitHub comment body limit is 65536 chars; truncate gracefully if huge
+            const maxPlanLen = 58000;
+            let planText = payload.plan;
+            let truncated = false;
+            if (planText.length > maxPlanLen) {
+              planText = planText.slice(0, maxPlanLen) + '\n... [Output truncated; see full log in workflow run]';
+              truncated = true;
+            }
+
+            const embeddedJson = Buffer.from(JSON.stringify({
+              pr_number: payload.pr_number,
+              head_sha: payload.head_sha,
+              run_url: payload.run_url,
+              command: payload.command,
+              plan: payload.plan
+            })).toString('base64');
+
+            const body = [
+              marker,
+              `## 🔍 Azure Deployment Stack What-If (\`${{ env.STACK_NAME }}\`)`,
+              '',
+              `**Workflow Run:** [View Run #${{ github.run_id }}](${payload.run_url})`,
+              `**Commit SHA:** \`${payload.head_sha}\``,
+              '',
+              '### Executed Command',
+              '```bash',
+              payload.command,
+              '```',
+              '',
+              '### What-If Result',
+              truncated ? '> ⚠️ Output exceeded comment limit; full output is attached in the workflow run.' : '',
+              '```diff',
+              planText,
+              '```',
+              '',
+              `<details><summary>PR What-If Metadata (for deployment comparison)</summary>`,
+              '',
+              `<!-- WHATIF_B64_START -->${embeddedJson}<!-- WHATIF_B64_END -->`,
+              '',
+              `</details>`
+            ].filter(Boolean).join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
