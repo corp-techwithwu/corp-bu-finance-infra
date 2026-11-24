@@ -87,6 +87,8 @@ param apiAuthAppSecret string = ''
 @description('Additional tags merged with baseline governance tags.')
 param extraTags object = {}
 
+param deployedAt string = utcNow('yyyy-MM-dd')
+
 var paddedIndex = padLeft(string(instanceIndex), 2, '0')
 var nameSeed = '${workload}-${environment}-${paddedIndex}'
 var rgName = 'rg-${nameSeed}'
@@ -104,7 +106,7 @@ var baselineTags = union(extraTags, {
   environment: environment
   managedBy: 'bicep-deployment-stack'
   costCenter: toLower('${workload}-${environment}')
-  deployedAt: utcNow('yyyy-MM-dd')
+  deployedAt: deployedAt
 })
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -135,7 +137,7 @@ module sqlDnsZone './modules/privateDns.bicep' = {
   name: 'dns-sql-${nameSeed}'
   scope: rg
   params: {
-    dnsZoneName: 'privatelink${environment().suffixes.sqlServerHostname}'
+    dnsZoneName: 'privatelink${az.environment().suffixes.sqlServerHostname}'
     vnetId: network.outputs.vnetId
     tags: baselineTags
   }
