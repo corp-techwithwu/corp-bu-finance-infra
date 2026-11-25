@@ -11,10 +11,10 @@ param instanceIndex = 1
 param stackName = 'stack-finance-dev'
 
 // Region & Location Parameterization
-param location = 'centralus'
-param keyVaultLocation = 'centralus'
-param databaseLocation = 'centralus'
-param appServiceLocation = 'centralus'
+param location = 'westus2'
+param keyVaultLocation = 'westus2'
+param databaseLocation = 'japaneast'
+param appServiceLocation = 'westus2'
 
 // Key Vault Tier Configurations
 param keyVaultSkuName = 'standard'
@@ -25,16 +25,16 @@ param apiAuthAppClientId = '44444444-4444-4444-4444-444444444444'
 
 // Database Tier Configurations
 param sqlDatabaseName = 'sqldb-finance-dev'
-param sqlDatabaseSkuName = 'Basic'
-param sqlDatabaseSkuTier = 'Basic'
+param sqlDatabaseSkuName = 'Free'
+param sqlDatabaseSkuTier = 'Free'
 param sqlDatabaseCapacity = 5
-param sqlDatabaseMaxSizeBytes = 34359738368 // 32 GB
+param sqlDatabaseMaxSizeBytes = 2147483648 // 2 GB
 param sqlAdminObjectId = '00000000-0000-0000-0000-000000000002'
 param sqlAdminLogin = 'EntraAdmin-Finance-Dev'
 param sqlAdminPrincipalType = 'Group'
 
 // App Service Tier Configurations
-param appServicePlanSku = 'B1'
+param appServicePlanSku = 'F1'
 param appServicePlanCapacity = 1
 param appServiceLinuxFxVersion = 'DOTNETCORE|8.0'
 
