@@ -40,6 +40,9 @@ param alwaysOn bool = true
 @description('Tags applied to the resource.')
 param tags object = {}
 
+@description('Disable public network access when using Private Endpoints.')
+param disablePublicNetworkAccess bool = true
+
 var clientSecretSettingName = 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
 
 var secretAppSetting = (!empty(authClientSecret)) ? [
@@ -61,7 +64,7 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
     serverFarmResourceId: planId
     virtualNetworkSubnetId: !empty(subnetId) ? subnetId : null
     httpsOnly: true
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: disablePublicNetworkAccess ? 'Disabled' : 'Enabled'
     managedIdentities: {
       systemAssigned: true
     }
