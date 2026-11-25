@@ -44,7 +44,7 @@ The deployment is decoupled into three dedicated Resource Groups, each with its 
 
 The Web App uses the Node.js 22 LTS stack for the Next.js application and does not enable App Service Easy Auth. The API App uses .NET 10 and Easy Auth v2. The API authentication client ID is configured directly through the environment parameter file; only the API client secret is supported as a Key Vault secret reference.
 
-The spoke VNet separates App Service integration, application private endpoints, the Key Vault private endpoint, and the SQL private endpoint into distinct subnets. Private endpoint network policies are disabled only on the private endpoint subnets.
+Azure SQL and Key Vault are managed PaaS services and are not deployed into customer subnets. Their private endpoints, along with the App Service private endpoints, use the shared `snet-pe` subnet. Private endpoint network policies are disabled only on `snet-pe`.
 
 ## 📦 Azure Verified Modules (AVM) Standard
 

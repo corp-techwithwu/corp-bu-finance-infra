@@ -141,14 +141,6 @@ param subnets array = [
     name: 'snet-pe'
     addressPrefix: '10.1.3.0/24'
   }
-  {
-    name: 'snet-keyvault'
-    addressPrefix: '10.1.4.0/24'
-  }
-  {
-    name: 'snet-database'
-    addressPrefix: '10.1.5.0/24'
-  }
 ]
 
 @description('Hub connectivity subscription ID.')
@@ -247,7 +239,7 @@ module keyVaultTier './modules/keyVaultTier.bicep' = {
     softDeleteRetentionInDays: keyVaultSoftDeleteRetentionInDays
     enablePurgeProtection: keyVaultEnablePurgeProtection
     apiAuthAppSecret: apiAuthAppSecret
-    peSubnetId: networkTier.outputs.keyVaultSubnetId
+    peSubnetId: networkTier.outputs.peSubnetId
     vnetId: networkTier.outputs.vnetId
     tags: baselineTags
   }
@@ -270,7 +262,7 @@ module databaseTier './modules/databaseTier.bicep' = {
     skuTier: sqlDatabaseSkuTier
     capacity: sqlDatabaseCapacity
     maxSizeBytes: sqlDatabaseMaxSizeBytes
-    peSubnetId: networkTier.outputs.databaseSubnetId
+    peSubnetId: networkTier.outputs.peSubnetId
     vnetId: networkTier.outputs.vnetId
     tags: baselineTags
   }

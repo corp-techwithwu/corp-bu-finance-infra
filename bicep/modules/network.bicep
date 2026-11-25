@@ -49,11 +49,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-09-01' = {
         networkSecurityGroup: {
           id: nsg.id
         }
-        privateEndpointNetworkPolicies: contains([
-          'snet-pe'
-          'snet-keyvault'
-          'snet-database'
-        ], subnet.name) ? 'Disabled' : 'Enabled'
+        privateEndpointNetworkPolicies: subnet.name == 'snet-pe' ? 'Disabled' : 'Enabled'
         privateLinkServiceNetworkPolicies: 'Enabled'
         delegations: contains(subnet, 'delegation') && !empty(subnet.delegation) ? [
           {

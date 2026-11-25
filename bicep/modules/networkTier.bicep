@@ -49,9 +49,3 @@ output apiSubnetId string = filter(network.outputs.subnets, s => s.name == 'snet
 
 @description('Subnet ID for App Service Private Endpoints.')
 output peSubnetId string = filter(network.outputs.subnets, s => s.name == 'snet-pe')[0].id
-
-@description('Subnet ID for the Key Vault Private Endpoint.')
-output keyVaultSubnetId string = filter(network.outputs.subnets, s => s.name == 'snet-keyvault')[0].id
-
-@description('Subnet ID for the SQL Database Private Endpoint.')
-output databaseSubnetId string = filter(network.outputs.subnets, s => s.name == 'snet-database')[0].id

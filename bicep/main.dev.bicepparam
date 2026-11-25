@@ -56,14 +56,6 @@ param subnets = [
     name: 'snet-pe'
     addressPrefix: '10.2.3.0/24'
   }
-  {
-    name: 'snet-keyvault'
-    addressPrefix: '10.2.4.0/24'
-  }
-  {
-    name: 'snet-database'
-    addressPrefix: '10.2.5.0/24'
-  }
 ]
 
 param hubSubscriptionId = '7f493ff6-603b-4254-a6bf-e9acfc665866'
