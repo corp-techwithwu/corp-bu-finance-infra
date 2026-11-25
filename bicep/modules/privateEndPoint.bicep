@@ -19,7 +19,7 @@ param dnsZoneId string
 @description('Tags applied to the Private Endpoint.')
 param tags object = {}
 
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2025-09-01' = {
   name: privateEndpointName
   location: location
   tags: tags

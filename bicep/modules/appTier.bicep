@@ -22,8 +22,11 @@ param planSkuName string = 'B1'
 @description('Number of worker instances.')
 param planCapacity int = 1
 
-@description('Linux runtime stack.')
-param linuxFxVersion string = 'DOTNETCORE|8.0'
+@description('Linux runtime stack for the Next.js Web App.')
+param webAppLinuxFxVersion string = 'NODE|22-lts'
+
+@description('Linux runtime stack for the API App.')
+param apiAppLinuxFxVersion string = 'DOTNETCORE|10.0'
 
 @description('Subnet ID for Web App VNet integration.')
 param webSubnetId string
@@ -43,16 +46,11 @@ param sqlServerFqdn string
 @description('Name of the backend SQL Database.')
 param databaseName string
 
-@description('Key Vault Secret Reference for Web Auth Client ID.')
-param webAuthAppClientIdRef string = ''
-
-@description('Key Vault Secret Reference for Web Auth Client Secret.')
-param webAuthAppSecretRef string = ''
-
-@description('Key Vault Secret Reference for API Auth Client ID.')
-param apiAuthAppClientIdRef string = ''
+@description('API App Entra ID Client ID.')
+param apiAuthAppClientId string
 
 @description('Key Vault Secret Reference for API Auth Client Secret.')
+@secure()
 param apiAuthAppSecretRef string = ''
 
 @description('Tags applied to app tier resources.')
@@ -78,7 +76,7 @@ module apiAppModule './appService.bicep' = {
     location: location
     appName: apiAppName
     planId: planModule.outputs.planId
-    linuxFxVersion: linuxFxVersion
+    linuxFxVersion: apiAppLinuxFxVersion
     subnetId: apiSubnetId
     connectionStrings: [
       {
@@ -87,7 +85,8 @@ module apiAppModule './appService.bicep' = {
         type: 'SQLAzure'
       }
     ]
-    authClientId: apiAuthAppClientIdRef
+    useAuth: true
+    authClientId: apiAuthAppClientId
     authClientSecret: apiAuthAppSecretRef
     isApi: true
     tags: tags
@@ -100,7 +99,7 @@ module webAppModule './appService.bicep' = {
     location: location
     appName: webAppName
     planId: planModule.outputs.planId
-    linuxFxVersion: linuxFxVersion
+    linuxFxVersion: webAppLinuxFxVersion
     subnetId: webSubnetId
     appSettings: [
       {
@@ -109,11 +108,10 @@ module webAppModule './appService.bicep' = {
       }
       {
         name: 'ApiAuthUri'
-        value: 'api://${apiAuthAppClientIdRef}'
+        value: 'api://${apiAuthAppClientId}'
       }
     ]
-    authClientId: webAuthAppClientIdRef
-    authClientSecret: webAuthAppSecretRef
+    useAuth: false
     isApi: false
     tags: tags
   }

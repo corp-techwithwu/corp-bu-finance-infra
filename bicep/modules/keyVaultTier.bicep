@@ -35,16 +35,6 @@ param enablePurgeProtection bool = true
 ])
 param publicNetworkAccess string = 'Disabled'
 
-@description('Web App Entra ID Client ID.')
-param webAuthAppClientId string = ''
-
-@description('Web App Entra ID Client Secret.')
-@secure()
-param webAuthAppSecret string = ''
-
-@description('API App Entra ID Client ID.')
-param apiAuthAppClientId string = ''
-
 @description('API App Entra ID Client Secret.')
 @secure()
 param apiAuthAppSecret string = ''
@@ -73,9 +63,6 @@ module keyVault './keyVault.bicep' = {
     softDeleteRetentionInDays: softDeleteRetentionInDays
     enablePurgeProtection: enablePurgeProtection
     publicNetworkAccess: publicNetworkAccess
-    webAuthAppClientId: webAuthAppClientId
-    webAuthAppSecret: webAuthAppSecret
-    apiAuthAppClientId: apiAuthAppClientId
     apiAuthAppSecret: apiAuthAppSecret
     keyNames: keyNames
     tags: tags
@@ -112,15 +99,6 @@ output keyVaultName string = keyVault.outputs.keyVaultName
 
 @description('Vault URI of the Key Vault.')
 output vaultUri string = keyVault.outputs.vaultUri
-
-@description('App Service Key Vault reference for Web Auth Client ID.')
-output webAuthAppClientIdRef string = keyVault.outputs.webAuthAppClientIdRef
-
-@description('App Service Key Vault reference for Web Auth Client Secret.')
-output webAuthAppSecretRef string = keyVault.outputs.webAuthAppSecretRef
-
-@description('App Service Key Vault reference for API Auth Client ID.')
-output apiAuthAppClientIdRef string = keyVault.outputs.apiAuthAppClientIdRef
 
 @description('App Service Key Vault reference for API Auth Client Secret.')
 output apiAuthAppSecretRef string = keyVault.outputs.apiAuthAppSecretRef

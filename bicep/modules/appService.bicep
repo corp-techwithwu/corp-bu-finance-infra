@@ -9,8 +9,8 @@ param appName string
 @description('Resource ID of the App Service Plan.')
 param planId string
 
-@description('Linux runtime stack (e.g., DOTNETCORE|8.0 or DOTNETCORE|10.0).')
-param linuxFxVersion string = 'DOTNETCORE|8.0'
+@description('Linux runtime stack (e.g., NODE|22-lts or DOTNETCORE|10.0).')
+param linuxFxVersion string = 'DOTNETCORE|10.0'
 
 @description('Optional subnet resource ID for VNet regional integration.')
 param subnetId string = ''
@@ -81,7 +81,7 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
   }
 }
 
-resource authSettings 'Microsoft.Web/sites/config@2023-12-01' = if (useAuth && !empty(authClientId)) {
+resource authSettings 'Microsoft.Web/sites/config@2025-03-01' = if (useAuth && !empty(authClientId)) {
   name: '${appName}/authsettingsV2'
   dependsOn: [
     appServiceAvm

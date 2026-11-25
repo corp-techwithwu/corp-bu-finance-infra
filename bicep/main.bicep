@@ -64,13 +64,6 @@ param keyVaultSoftDeleteRetentionInDays int = 90
 @description('Enable purge protection for Key Vault.')
 param keyVaultEnablePurgeProtection bool = true
 
-@description('Web App Entra ID Client ID.')
-param webAuthAppClientId string = ''
-
-@description('Web App Entra ID Client Secret.')
-@secure()
-param webAuthAppSecret string = ''
-
 @description('API App Entra ID Client ID.')
 param apiAuthAppClientId string = ''
 
@@ -120,8 +113,11 @@ param appServicePlanSku string = 'B1'
 @minValue(1)
 param appServicePlanCapacity int = 1
 
-@description('Linux runtime stack.')
-param appServiceLinuxFxVersion string = 'DOTNETCORE|8.0'
+@description('Linux runtime stack for the Next.js Web App.')
+param webAppLinuxFxVersion string = 'NODE|22-lts'
+
+@description('Linux runtime stack for the API App.')
+param apiAppLinuxFxVersion string = 'DOTNETCORE|10.0'
 
 // ==========================================
 // 6. Networking & Governance Parameters
@@ -144,6 +140,14 @@ param subnets array = [
   {
     name: 'snet-pe'
     addressPrefix: '10.1.3.0/24'
+  }
+  {
+    name: 'snet-keyvault'
+    addressPrefix: '10.1.4.0/24'
+  }
+  {
+    name: 'snet-database'
+    addressPrefix: '10.1.5.0/24'
   }
 ]
 
@@ -193,19 +197,19 @@ var baselineTags = union(extraTags, {
 // ==========================================
 // Resource Groups (3 Dedicated RGs)
 // ==========================================
-resource rgKeyVault 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource rgKeyVault 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: rgKeyVaultName
   location: keyVaultLocation
   tags: baselineTags
 }
 
-resource rgData 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource rgData 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: rgDataName
   location: databaseLocation
   tags: baselineTags
 }
 
-resource rgApp 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource rgApp 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: rgAppName
   location: appServiceLocation
   tags: baselineTags
@@ -242,11 +246,8 @@ module keyVaultTier './modules/keyVaultTier.bicep' = {
     skuName: keyVaultSkuName
     softDeleteRetentionInDays: keyVaultSoftDeleteRetentionInDays
     enablePurgeProtection: keyVaultEnablePurgeProtection
-    webAuthAppClientId: webAuthAppClientId
-    webAuthAppSecret: webAuthAppSecret
-    apiAuthAppClientId: apiAuthAppClientId
     apiAuthAppSecret: apiAuthAppSecret
-    peSubnetId: networkTier.outputs.peSubnetId
+    peSubnetId: networkTier.outputs.keyVaultSubnetId
     vnetId: networkTier.outputs.vnetId
     tags: baselineTags
   }
@@ -269,7 +270,7 @@ module databaseTier './modules/databaseTier.bicep' = {
     skuTier: sqlDatabaseSkuTier
     capacity: sqlDatabaseCapacity
     maxSizeBytes: sqlDatabaseMaxSizeBytes
-    peSubnetId: networkTier.outputs.peSubnetId
+    peSubnetId: networkTier.outputs.databaseSubnetId
     vnetId: networkTier.outputs.vnetId
     tags: baselineTags
   }
@@ -288,16 +289,15 @@ module appTier './modules/appTier.bicep' = {
     apiAppName: apiAppName
     planSkuName: appServicePlanSku
     planCapacity: appServicePlanCapacity
-    linuxFxVersion: appServiceLinuxFxVersion
+    webAppLinuxFxVersion: webAppLinuxFxVersion
+    apiAppLinuxFxVersion: apiAppLinuxFxVersion
     webSubnetId: networkTier.outputs.webSubnetId
     apiSubnetId: networkTier.outputs.apiSubnetId
     peSubnetId: networkTier.outputs.peSubnetId
     vnetId: networkTier.outputs.vnetId
     sqlServerFqdn: databaseTier.outputs.serverFullyQualifiedDomainName
     databaseName: databaseTier.outputs.databaseName
-    webAuthAppClientIdRef: keyVaultTier.outputs.webAuthAppClientIdRef
-    webAuthAppSecretRef: keyVaultTier.outputs.webAuthAppSecretRef
-    apiAuthAppClientIdRef: keyVaultTier.outputs.apiAuthAppClientIdRef
+    apiAuthAppClientId: apiAuthAppClientId
     apiAuthAppSecretRef: keyVaultTier.outputs.apiAuthAppSecretRef
     tags: baselineTags
   }

@@ -31,16 +31,6 @@ param enablePurgeProtection bool = true
 ])
 param publicNetworkAccess string = 'Disabled'
 
-@description('Web App Entra ID Client ID.')
-param webAuthAppClientId string = ''
-
-@description('Web App Entra ID Client Secret.')
-@secure()
-param webAuthAppSecret string = ''
-
-@description('API App Entra ID Client ID.')
-param apiAuthAppClientId string = ''
-
 @description('API App Entra ID Client Secret.')
 @secure()
 param apiAuthAppSecret string = ''
@@ -52,18 +42,6 @@ param keyNames array = []
 param tags object = {}
 
 var rawSecrets = [
-  {
-    name: 'webAuthAppClientId'
-    value: webAuthAppClientId
-  }
-  {
-    name: 'webAuthAppSecret'
-    value: webAuthAppSecret
-  }
-  {
-    name: 'apiAuthAppClientId'
-    value: apiAuthAppClientId
-  }
   {
     name: 'apiAuthAppSecret'
     value: apiAuthAppSecret
@@ -108,22 +86,10 @@ output keyVaultName string = keyVaultAvm.outputs.name
 @description('Vault URI of the Key Vault.')
 output vaultUri string = keyVaultAvm.outputs.uri
 
-@description('App Service Key Vault reference for Web Auth Client ID.')
-output webAuthAppClientIdRef string = !empty(webAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAuthAppClientId)' : ''
-
-@description('App Service Key Vault reference for Web Auth Client Secret.')
-output webAuthAppSecretRef string = !empty(webAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAuthAppSecret)' : ''
-
-@description('App Service Key Vault reference for API Auth Client ID.')
-output apiAuthAppClientIdRef string = !empty(apiAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppClientId)' : ''
-
 @description('App Service Key Vault reference for API Auth Client Secret.')
 output apiAuthAppSecretRef string = !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppSecret)' : ''
 
 @description('Map of all Key Vault secret reference strings.')
 output secretReferences object = {
-  webAuthAppClientId: !empty(webAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAuthAppClientId)' : ''
-  webAuthAppSecret: !empty(webAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAuthAppSecret)' : ''
-  apiAuthAppClientId: !empty(apiAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppClientId)' : ''
   apiAuthAppSecret: !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppSecret)' : ''
 }

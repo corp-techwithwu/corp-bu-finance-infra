@@ -20,8 +20,8 @@ param appServiceLocation = 'westus2'
 param keyVaultSkuName = 'standard'
 param keyVaultSoftDeleteRetentionInDays = 7
 param keyVaultEnablePurgeProtection = false
-param webAuthAppClientId = '33333333-3333-3333-3333-333333333333'
-param apiAuthAppClientId = '44444444-4444-4444-4444-444444444444'
+param apiAuthAppClientId = '281c4f44-2d4e-4ae7-8ab5-08cfcd43bb60'
+param apiAuthAppSecret = ''
 
 // Database Tier Configurations
 param sqlDatabaseName = 'sqldb-finance-dev'
@@ -36,7 +36,8 @@ param sqlAdminPrincipalType = 'Group'
 // App Service Tier Configurations
 param appServicePlanSku = 'F1'
 param appServicePlanCapacity = 1
-param appServiceLinuxFxVersion = 'DOTNETCORE|8.0'
+param webAppLinuxFxVersion = 'NODE|22-lts'
+param apiAppLinuxFxVersion = 'DOTNETCORE|10.0'
 
 // Networking & Hub Configurations
 param vnetAddressPrefix = '10.2.0.0/16'
@@ -54,6 +55,14 @@ param subnets = [
   {
     name: 'snet-pe'
     addressPrefix: '10.2.3.0/24'
+  }
+  {
+    name: 'snet-keyvault'
+    addressPrefix: '10.2.4.0/24'
+  }
+  {
+    name: 'snet-database'
+    addressPrefix: '10.2.5.0/24'
   }
 ]
 

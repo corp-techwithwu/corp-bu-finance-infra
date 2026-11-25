@@ -40,6 +40,12 @@ The deployment is decoupled into three dedicated Resource Groups, each with its 
 
 ---
 
+### App runtimes and network isolation
+
+The Web App uses the Node.js 22 LTS stack for the Next.js application and does not enable App Service Easy Auth. The API App uses .NET 10 and Easy Auth v2. The API authentication client ID is configured directly through the environment parameter file; only the API client secret is supported as a Key Vault secret reference.
+
+The spoke VNet separates App Service integration, application private endpoints, the Key Vault private endpoint, and the SQL private endpoint into distinct subnets. Private endpoint network policies are disabled only on the private endpoint subnets.
+
 ## 📦 Azure Verified Modules (AVM) Standard
 
 All core resources leverage official, production-ready Microsoft Azure Verified Modules sourced from the public registry (`br/public`):

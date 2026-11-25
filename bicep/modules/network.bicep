@@ -25,13 +25,13 @@ param useRemoteGateways bool = false
 @description('Tags applied to network resources.')
 param tags object = {}
 
-resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource nsg 'Microsoft.Network/networkSecurityGroups@2025-09-01' = {
   name: 'nsg-${nameSeed}'
   location: location
   tags: tags
 }
 
-resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
+resource vnet 'Microsoft.Network/virtualNetworks@2025-09-01' = {
   name: 'vnet-${nameSeed}'
   location: location
   tags: tags
@@ -49,7 +49,11 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         networkSecurityGroup: {
           id: nsg.id
         }
-        privateEndpointNetworkPolicies: 'Disabled'
+        privateEndpointNetworkPolicies: contains([
+          'snet-pe'
+          'snet-keyvault'
+          'snet-database'
+        ], subnet.name) ? 'Disabled' : 'Enabled'
         privateLinkServiceNetworkPolicies: 'Enabled'
         delegations: contains(subnet, 'delegation') && !empty(subnet.delegation) ? [
           {
@@ -64,7 +68,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   }
 }
 
-resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
+resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2025-09-01' = {
   parent: vnet
   name: 'peer-${vnet.name}-to-${hubVnetName}'
   properties: {
