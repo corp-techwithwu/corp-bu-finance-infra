@@ -70,22 +70,25 @@ param sqlAdminObjectId string
 @description('Entra ID Admin Login/Name for SQL Server.')
 param sqlAdminLogin string
 
-@description('Web App Entra ID Client ID.')
-param webAuthAppClientId string = ''
-
-@description('Web App Entra ID Client Secret.')
-@secure()
-param webAuthAppSecret string = ''
-
-@description('API App Entra ID Client ID.')
-param apiAuthAppClientId string = ''
-
-@description('API App Entra ID Client Secret.')
-@secure()
-param apiAuthAppSecret string = ''
-
-@description('Optional Key Vault name override (must be globally unique, 3-24 chars).')
-param keyVaultName string = ''
+// // ==========================================
+// // Key Vault Parameters (Commented out for now)
+// // ==========================================
+// @description('Web App Entra ID Client ID.')
+// param webAuthAppClientId string = ''
+//
+// @description('Web App Entra ID Client Secret.')
+// @secure()
+// param webAuthAppSecret string = ''
+//
+// @description('API App Entra ID Client ID.')
+// param apiAuthAppClientId string = ''
+//
+// @description('API App Entra ID Client Secret.')
+// @secure()
+// param apiAuthAppSecret string = ''
+//
+// @description('Optional Key Vault name override (must be globally unique, 3-24 chars).')
+// param keyVaultName string = ''
 
 @description('Additional tags merged with baseline governance tags.')
 param extraTags object = {}
@@ -102,9 +105,9 @@ var sqlServerName = 'sql-${nameSeed}'
 var sqlPeName = 'pe-sql-${nameSeed}'
 var apiPeName = 'pe-api-${nameSeed}'
 
-// Key Vault names are max 24 chars and globally unique; append a deterministic suffix if not overridden
-var uniqueSuffix = take(uniqueString(subscription().id, rgName), 5)
-var resolvedKeyVaultName = !empty(keyVaultName) ? keyVaultName : take('kv-${workload}-${environment}-${paddedIndex}-${uniqueSuffix}', 24)
+// // Key Vault names are max 24 chars and globally unique; append a deterministic suffix if not overridden
+// var uniqueSuffix = take(uniqueString(subscription().id, rgName), 5)
+// var resolvedKeyVaultName = !empty(keyVaultName) ? keyVaultName : take('kv-${workload}-${environment}-${paddedIndex}-${uniqueSuffix}', 24)
 
 var hubVnetId = '/subscriptions/${hubSubscriptionId}/resourceGroups/${hubResourceGroupName}/providers/Microsoft.Network/virtualNetworks/${hubVnetName}'
 
@@ -122,45 +125,48 @@ resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   tags: baselineTags
 }
 
-var kvPeName = 'pe-kv-${nameSeed}'
-
-module kvDnsZone './modules/privateDns.bicep' = {
-  name: 'dns-kv-${nameSeed}'
-  scope: rg
-  params: {
-    dnsZoneName: 'privatelink.vaultcore.azure.net'
-    vnetId: network.outputs.vnetId
-    tags: baselineTags
-  }
-}
-
-module kvPrivateEndpoint './modules/privateEndpoint.bicep' = {
-  name: 'pe-kv-${nameSeed}'
-  scope: rg
-  params: {
-    location: location
-    privateEndpointName: kvPeName
-    subnetId: peSubnetId
-    resourceId: keyVaultModule.outputs.keyVaultId
-    groupId: 'vault'
-    dnsZoneId: kvDnsZone.outputs.privateDnsId
-    tags: baselineTags
-  }
-}
-
-module keyVaultModule './modules/keyVault.bicep' = {
-  name: 'kv-${nameSeed}'
-  scope: rg
-  params: {
-    location: location
-    keyVaultName: resolvedKeyVaultName
-    webAuthAppClientId: webAuthAppClientId
-    webAuthAppSecret: webAuthAppSecret
-    apiAuthAppClientId: apiAuthAppClientId
-    apiAuthAppSecret: apiAuthAppSecret
-    tags: baselineTags
-  }
-}
+// // ==========================================
+// // Key Vault & Related PE/DNS (Commented out)
+// // ==========================================
+// var kvPeName = 'pe-kv-${nameSeed}'
+//
+// module kvDnsZone './modules/privateDns.bicep' = {
+//   name: 'dns-kv-${nameSeed}'
+//   scope: rg
+//   params: {
+//     dnsZoneName: 'privatelink.vaultcore.azure.net'
+//     vnetId: network.outputs.vnetId
+//     tags: baselineTags
+//   }
+// }
+//
+// module kvPrivateEndpoint './modules/privateEndpoint.bicep' = {
+//   name: 'pe-kv-${nameSeed}'
+//   scope: rg
+//   params: {
+//     location: location
+//     privateEndpointName: kvPeName
+//     subnetId: peSubnetId
+//     resourceId: keyVaultModule.outputs.keyVaultId
+//     groupId: 'vault'
+//     dnsZoneId: kvDnsZone.outputs.privateDnsId
+//     tags: baselineTags
+//   }
+// }
+//
+// module keyVaultModule './modules/keyVault.bicep' = {
+//   name: 'kv-${nameSeed}'
+//   scope: rg
+//   params: {
+//     location: location
+//     keyVaultName: resolvedKeyVaultName
+//     webAuthAppClientId: webAuthAppClientId
+//     webAuthAppSecret: webAuthAppSecret
+//     apiAuthAppClientId: apiAuthAppClientId
+//     apiAuthAppSecret: apiAuthAppSecret
+//     tags: baselineTags
+//   }
+// }
 
 module network './modules/network.bicep' = {
   name: 'network-${nameSeed}'
@@ -219,6 +225,7 @@ module sqlServerModule './modules/sqlServer.bicep' = {
     sqlServerName: sqlServerName
     sqlAdminObjectId: sqlAdminObjectId
     sqlAdminLogin: sqlAdminLogin
+    sqlAdminPrincipalType: 'Group'
     tags: baselineTags
   }
 }
@@ -249,8 +256,8 @@ module apiAppModule './modules/appService.bicep' = {
         type: 'SQLAzure'
       }
     ]
-    authClientId: keyVaultModule.outputs.apiAuthAppClientIdRef
-    authClientSecret: keyVaultModule.outputs.apiAuthAppSecretRef
+    // authClientId: keyVaultModule.outputs.apiAuthAppClientIdRef
+    // authClientSecret: keyVaultModule.outputs.apiAuthAppSecretRef
     isApi: true
     tags: baselineTags
   }
@@ -269,13 +276,13 @@ module webAppModule './modules/appService.bicep' = {
         name: 'ApiUri'
         value: 'https://${apiAppModule.outputs.appUrl}'
       }
-      {
-        name: 'ApiAuthUri'
-        value: 'api://${keyVaultModule.outputs.apiAuthAppClientIdRef}'
-      }
+      // {
+      //   name: 'ApiAuthUri'
+      //   value: 'api://${keyVaultModule.outputs.apiAuthAppClientIdRef}'
+      // }
     ]
-    authClientId: keyVaultModule.outputs.webAuthAppClientIdRef
-    authClientSecret: keyVaultModule.outputs.webAuthAppSecretRef
+    // authClientId: keyVaultModule.outputs.webAuthAppClientIdRef
+    // authClientSecret: keyVaultModule.outputs.webAuthAppSecretRef
     isApi: false
     tags: baselineTags
   }
@@ -315,14 +322,14 @@ output resourceGroupId string = rg.id
 @description('Name of the deployed Resource Group.')
 output resourceGroupName string = rg.name
 
-@description('Name of the Key Vault.')
-output keyVaultName string = keyVaultModule.outputs.keyVaultName
-
-@description('Vault URI of the Key Vault.')
-output keyVaultUri string = keyVaultModule.outputs.vaultUri
-
-@description('Key Vault secret references for downstream modules or templates.')
-output keyVaultSecretReferences object = keyVaultModule.outputs.secretReferences
+// @description('Name of the Key Vault.')
+// output keyVaultName string = keyVaultModule.outputs.keyVaultName
+//
+// @description('Vault URI of the Key Vault.')
+// output keyVaultUri string = keyVaultModule.outputs.vaultUri
+//
+// @description('Key Vault secret references for downstream modules or templates.')
+// output keyVaultSecretReferences object = keyVaultModule.outputs.secretReferences
 
 @description('Full HTTPS URL of the Web App.')
 output webAppUrl string = 'https://${webAppModule.outputs.appUrl}'

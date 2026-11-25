@@ -6,7 +6,7 @@ using './main.bicep'
 
 param workload = 'finance'
 param environment = 'prod'
-param location = 'centralus'
+param location = 'westus2'
 param instanceIndex = 1
 
 param vnetAddressPrefix = '10.1.0.0/16'
