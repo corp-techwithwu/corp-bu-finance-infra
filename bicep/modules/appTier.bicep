@@ -19,9 +19,6 @@ param apiAppName string
 @description('SKU name for App Service Plan.')
 param planSkuName string = 'B1'
 
-@description('SKU tier for App Service Plan.')
-param planSkuTier string = 'Basic'
-
 @description('Number of worker instances.')
 param planCapacity int = 1
 
@@ -69,7 +66,6 @@ module planModule './appServicePlan.bicep' = {
     location: location
     planName: planName
     skuName: planSkuName
-    skuTier: planSkuTier
     capacity: planCapacity
     tags: tags
   }

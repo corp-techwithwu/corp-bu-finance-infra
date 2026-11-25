@@ -35,7 +35,6 @@ param sqlAdminPrincipalType = 'Group'
 
 // App Service Tier Configurations
 param appServicePlanSku = 'B1'
-param appServicePlanTier = 'Basic'
 param appServicePlanCapacity = 1
 param appServiceLinuxFxVersion = 'DOTNETCORE|8.0'
 

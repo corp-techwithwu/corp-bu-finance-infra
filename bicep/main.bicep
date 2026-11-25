@@ -116,9 +116,6 @@ param sqlAdminPrincipalType string = 'Group'
 @description('App Service Plan SKU name (e.g., B1, S1, P1v3).')
 param appServicePlanSku string = 'B1'
 
-@description('App Service Plan SKU tier (e.g., Basic, Standard, PremiumV3).')
-param appServicePlanTier string = 'Basic'
-
 @description('App Service Plan worker instance capacity.')
 @minValue(1)
 param appServicePlanCapacity int = 1
@@ -290,7 +287,6 @@ module appTier './modules/appTier.bicep' = {
     webAppName: webAppName
     apiAppName: apiAppName
     planSkuName: appServicePlanSku
-    planSkuTier: appServicePlanTier
     planCapacity: appServicePlanCapacity
     linuxFxVersion: appServiceLinuxFxVersion
     webSubnetId: networkTier.outputs.webSubnetId

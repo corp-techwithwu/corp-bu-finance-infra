@@ -9,9 +9,6 @@ param planName string
 @description('SKU name for the Linux App Service Plan.')
 param skuName string = 'B1'
 
-@description('SKU tier for the Linux App Service Plan.')
-param skuTier string = 'Basic'
-
 @description('Number of worker instances.')
 @minValue(1)
 param capacity int = 1
@@ -25,11 +22,8 @@ module appServicePlanAvm 'br/public:avm/res/web/serverfarm:0.4.1' = {
     name: planName
     location: location
     tags: tags
-    sku: {
-      name: skuName
-      tier: skuTier
-      capacity: capacity
-    }
+    skuName: skuName
+    skuCapacity: capacity
     kind: 'linux'
     reserved: true
   }

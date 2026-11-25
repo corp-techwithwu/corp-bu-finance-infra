@@ -13,7 +13,7 @@ param stackName = 'stack-finance-prod'
 // Region & Location Parameterization
 param location = 'westus2'
 param keyVaultLocation = 'westus2'
-param databaseLocation = 'westus2'
+param databaseLocation = 'japaneast'
 param appServiceLocation = 'westus2'
 
 // Key Vault Tier Configurations
@@ -23,9 +23,9 @@ param keyVaultEnablePurgeProtection = true
 
 // Database Tier Configurations
 param sqlDatabaseName = 'sqldb-finance-prod'
-param sqlDatabaseSkuName = 'S0'
-param sqlDatabaseSkuTier = 'Standard'
-param sqlDatabaseCapacity = 10
+param sqlDatabaseSkuName = 'B1'
+param sqlDatabaseSkuTier = 'B1'
+param sqlDatabaseCapacity = 5
 param sqlDatabaseMaxSizeBytes = 268435456000 // 250 GB
 param sqlAdminObjectId = 'cd016e03-5f34-404d-bb50-c139970285c3' // guokaswu_gmail.com
 param sqlAdminLogin = 'EntraAdmin-Finance-Prod'
@@ -33,7 +33,6 @@ param sqlAdminPrincipalType = 'Group'
 
 // App Service Tier Configurations
 param appServicePlanSku = 'B1'
-param appServicePlanTier = 'Basic'
 param appServicePlanCapacity = 1
 param appServiceLinuxFxVersion = 'DOTNETCORE|8.0'
 
