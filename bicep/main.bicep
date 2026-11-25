@@ -122,6 +122,32 @@ resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   tags: baselineTags
 }
 
+var kvPeName = 'pe-kv-${nameSeed}'
+
+module kvDnsZone './modules/privateDns.bicep' = {
+  name: 'dns-kv-${nameSeed}'
+  scope: rg
+  params: {
+    dnsZoneName: 'privatelink.vaultcore.azure.net'
+    vnetId: network.outputs.vnetId
+    tags: baselineTags
+  }
+}
+
+module kvPrivateEndpoint './modules/privateEndpoint.bicep' = {
+  name: 'pe-kv-${nameSeed}'
+  scope: rg
+  params: {
+    location: location
+    privateEndpointName: kvPeName
+    subnetId: peSubnetId
+    resourceId: keyVaultModule.outputs.keyVaultId
+    groupId: 'vault'
+    dnsZoneId: kvDnsZone.outputs.privateDnsId
+    tags: baselineTags
+  }
+}
+
 module keyVaultModule './modules/keyVault.bicep' = {
   name: 'kv-${nameSeed}'
   scope: rg

@@ -44,10 +44,13 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     }
     tenantId: subscription().tenantId
     enableRbacAuthorization: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+    enablePurgeProtection: true
     enabledForDeployment: false
     enabledForTemplateDeployment: true
     enabledForDiskEncryption: false
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
   }
 }
 
@@ -59,7 +62,6 @@ resource kvSecrets 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = [for item in
   }
 }]
 
-// Optional: Cryptographic keys (e.g., signing/encryption keys)
 resource kvKeys 'Microsoft.KeyVault/vaults/keys@2023-07-01' = [for keyName in keyNames: {
   parent: keyVault
   name: keyName
@@ -73,7 +75,6 @@ resource kvKeys 'Microsoft.KeyVault/vaults/keys@2023-07-01' = [for keyName in ke
   }
 }]
 
-// Helper URIs for @Microsoft.KeyVault(SecretUri=...) references
 var webClientIdUri = '${keyVault.properties.vaultUri}secrets/webAuthAppClientId'
 var webClientSecretUri = '${keyVault.properties.vaultUri}secrets/webAuthAppSecret'
 var apiClientIdUri = '${keyVault.properties.vaultUri}secrets/apiAuthAppClientId'
