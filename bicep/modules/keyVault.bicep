@@ -20,6 +20,9 @@ param apiAuthAppClientId string = ''
 @secure()
 param apiAuthAppSecret string = ''
 
+@description('Optional list of cryptographic key names to create in the Key Vault.')
+param keyNames array = []
+
 @description('Tags applied to the Key Vault.')
 param tags object = {}
 
@@ -56,8 +59,51 @@ resource kvSecrets 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = [for item in
   }
 }]
 
+// Optional: Cryptographic keys (e.g., signing/encryption keys)
+resource kvKeys 'Microsoft.KeyVault/vaults/keys@2023-07-01' = [for keyName in keyNames: {
+  parent: keyVault
+  name: keyName
+  properties: {
+    kty: 'RSA'
+    keySize: 2048
+    keyOps: [
+      'encrypt'
+      'decrypt'
+    ]
+  }
+}]
+
+// Helper URIs for @Microsoft.KeyVault(SecretUri=...) references
+var webClientIdUri = '${keyVault.properties.vaultUri}secrets/webAuthAppClientId'
+var webClientSecretUri = '${keyVault.properties.vaultUri}secrets/webAuthAppSecret'
+var apiClientIdUri = '${keyVault.properties.vaultUri}secrets/apiAuthAppClientId'
+var apiClientSecretUri = '${keyVault.properties.vaultUri}secrets/apiAuthAppSecret'
+
 @description('Resource ID of the Key Vault.')
 output keyVaultId string = keyVault.id
 
 @description('Name of the Key Vault.')
 output keyVaultName string = keyVault.name
+
+@description('Vault URI.')
+output vaultUri string = keyVault.properties.vaultUri
+
+@description('App Service Key Vault reference for Web Auth Client ID.')
+output webAuthAppClientIdRef string = !empty(webAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${webClientIdUri})' : ''
+
+@description('App Service Key Vault reference for Web Auth Client Secret.')
+output webAuthAppSecretRef string = !empty(webAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${webClientSecretUri})' : ''
+
+@description('App Service Key Vault reference for API Auth Client ID.')
+output apiAuthAppClientIdRef string = !empty(apiAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${apiClientIdUri})' : ''
+
+@description('App Service Key Vault reference for API Auth Client Secret.')
+output apiAuthAppSecretRef string = !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${apiClientSecretUri})' : ''
+
+@description('Map of all Key Vault secret reference strings.')
+output secretReferences object = {
+  webAuthAppClientId: !empty(webAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${webClientIdUri})' : ''
+  webAuthAppSecret: !empty(webAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${webClientSecretUri})' : ''
+  apiAuthAppClientId: !empty(apiAuthAppClientId) ? '@Microsoft.KeyVault(SecretUri=${apiClientIdUri})' : ''
+  apiAuthAppSecret: !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${apiClientSecretUri})' : ''
+}

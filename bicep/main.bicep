@@ -70,6 +70,20 @@ param sqlAdminObjectId string
 @description('Entra ID Admin Login/Name for SQL Server.')
 param sqlAdminLogin string
 
+@description('Web App Entra ID Client ID.')
+param webAuthAppClientId string = ''
+
+@description('Web App Entra ID Client Secret.')
+@secure()
+param webAuthAppSecret string = ''
+
+@description('API App Entra ID Client ID.')
+param apiAuthAppClientId string = ''
+
+@description('API App Entra ID Client Secret.')
+@secure()
+param apiAuthAppSecret string = ''
+
 @description('Optional Key Vault name override (must be globally unique, 3-24 chars).')
 param keyVaultName string = ''
 
@@ -114,20 +128,13 @@ module keyVaultModule './modules/keyVault.bicep' = {
   params: {
     location: location
     keyVaultName: resolvedKeyVaultName
+    webAuthAppClientId: webAuthAppClientId
+    webAuthAppSecret: webAuthAppSecret
+    apiAuthAppClientId: apiAuthAppClientId
+    apiAuthAppSecret: apiAuthAppSecret
     tags: baselineTags
   }
 }
-
-// Reference the existing Key Vault in the target RG to read secrets at deployment time
-resource existingKeyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
-  name: resolvedKeyVaultName
-  scope: rg
-}
-
-var webAuthAppClientId = existingKeyVault.getSecret('webAuthAppClientId')
-var webAuthAppSecret = existingKeyVault.getSecret('webAuthAppSecret')
-var apiAuthAppClientId = existingKeyVault.getSecret('apiAuthAppClientId')
-var apiAuthAppSecret = existingKeyVault.getSecret('apiAuthAppSecret')
 
 module network './modules/network.bicep' = {
   name: 'network-${nameSeed}'
@@ -204,9 +211,6 @@ module databaseModule './modules/sqlDatabase.bicep' = {
 module apiAppModule './modules/appService.bicep' = {
   name: 'api-${nameSeed}'
   scope: rg
-  dependsOn: [
-    keyVaultModule
-  ]
   params: {
     location: location
     appName: apiAppName
@@ -219,8 +223,8 @@ module apiAppModule './modules/appService.bicep' = {
         type: 'SQLAzure'
       }
     ]
-    authClientId: apiAuthAppClientId
-    authClientSecret: apiAuthAppSecret
+    authClientId: keyVaultModule.outputs.apiAuthAppClientIdRef
+    authClientSecret: keyVaultModule.outputs.apiAuthAppSecretRef
     isApi: true
     tags: baselineTags
   }
@@ -229,9 +233,6 @@ module apiAppModule './modules/appService.bicep' = {
 module webAppModule './modules/appService.bicep' = {
   name: 'web-${nameSeed}'
   scope: rg
-  dependsOn: [
-    keyVaultModule
-  ]
   params: {
     location: location
     appName: webAppName
@@ -244,11 +245,11 @@ module webAppModule './modules/appService.bicep' = {
       }
       {
         name: 'ApiAuthUri'
-        value: 'api://${apiAuthAppClientId}'
+        value: 'api://${keyVaultModule.outputs.apiAuthAppClientIdRef}'
       }
     ]
-    authClientId: webAuthAppClientId
-    authClientSecret: webAuthAppSecret
+    authClientId: keyVaultModule.outputs.webAuthAppClientIdRef
+    authClientSecret: keyVaultModule.outputs.webAuthAppSecretRef
     isApi: false
     tags: baselineTags
   }
@@ -290,6 +291,12 @@ output resourceGroupName string = rg.name
 
 @description('Name of the Key Vault.')
 output keyVaultName string = keyVaultModule.outputs.keyVaultName
+
+@description('Vault URI of the Key Vault.')
+output keyVaultUri string = keyVaultModule.outputs.vaultUri
+
+@description('Key Vault secret references for downstream modules or templates.')
+output keyVaultSecretReferences object = keyVaultModule.outputs.secretReferences
 
 @description('Full HTTPS URL of the Web App.')
 output webAppUrl string = 'https://${webAppModule.outputs.appUrl}'
