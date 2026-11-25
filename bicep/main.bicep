@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 metadata name = 'Corporate Workload Deployment Stack'
-metadata description = 'Subscription-level deployment stack provisioning an end-to-end enterprise workload: Resource Group, Spoke VNet with Hub peering, Azure SQL with Entra ID authentication, Web & API App Services with Private Endpoints, and Private DNS.'
+metadata description = 'Subscription-level deployment stack provisioning an end-to-end enterprise workload: Resource Group, Spoke VNet with Hub peering, Azure SQL with Entra ID authentication, Web & API App Services with Private Endpoints, Private DNS, and Key Vault.'
 
 @description('Workload identifier (e.g., finance, hr, core).')
 @minLength(2)
@@ -70,19 +70,8 @@ param sqlAdminObjectId string
 @description('Entra ID Admin Login/Name for SQL Server.')
 param sqlAdminLogin string
 
-@description('Web App Entra ID Client ID.')
-param webAuthAppClientId string
-
-@description('Web App Entra ID Client Secret or Key Vault URI reference.')
-@secure()
-param webAuthAppSecret string = ''
-
-@description('API App Entra ID Client ID.')
-param apiAuthAppClientId string
-
-@description('API App Entra ID Client Secret or Key Vault URI reference.')
-@secure()
-param apiAuthAppSecret string = ''
+@description('Optional Key Vault name override (must be globally unique, 3-24 chars).')
+param keyVaultName string = ''
 
 @description('Additional tags merged with baseline governance tags.')
 param extraTags object = {}
@@ -99,6 +88,10 @@ var sqlServerName = 'sql-${nameSeed}'
 var sqlPeName = 'pe-sql-${nameSeed}'
 var apiPeName = 'pe-api-${nameSeed}'
 
+// Key Vault names are max 24 chars and globally unique; append a deterministic suffix if not overridden
+var uniqueSuffix = take(uniqueString(subscription().id, rgName), 5)
+var resolvedKeyVaultName = !empty(keyVaultName) ? keyVaultName : take('kv-${workload}-${environment}-${paddedIndex}-${uniqueSuffix}', 24)
+
 var hubVnetId = '/subscriptions/${hubSubscriptionId}/resourceGroups/${hubResourceGroupName}/providers/Microsoft.Network/virtualNetworks/${hubVnetName}'
 
 var baselineTags = union(extraTags, {
@@ -114,6 +107,27 @@ resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   location: location
   tags: baselineTags
 }
+
+module keyVaultModule './modules/keyVault.bicep' = {
+  name: 'kv-${nameSeed}'
+  scope: rg
+  params: {
+    location: location
+    keyVaultName: resolvedKeyVaultName
+    tags: baselineTags
+  }
+}
+
+// Reference the existing Key Vault in the target RG to read secrets at deployment time
+resource existingKeyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: resolvedKeyVaultName
+  scope: rg
+}
+
+var webAuthAppClientId = existingKeyVault.getSecret('webAuthAppClientId')
+var webAuthAppSecret = existingKeyVault.getSecret('webAuthAppSecret')
+var apiAuthAppClientId = existingKeyVault.getSecret('apiAuthAppClientId')
+var apiAuthAppSecret = existingKeyVault.getSecret('apiAuthAppSecret')
 
 module network './modules/network.bicep' = {
   name: 'network-${nameSeed}'
@@ -190,6 +204,9 @@ module databaseModule './modules/sqlDatabase.bicep' = {
 module apiAppModule './modules/appService.bicep' = {
   name: 'api-${nameSeed}'
   scope: rg
+  dependsOn: [
+    keyVaultModule
+  ]
   params: {
     location: location
     appName: apiAppName
@@ -212,6 +229,9 @@ module apiAppModule './modules/appService.bicep' = {
 module webAppModule './modules/appService.bicep' = {
   name: 'web-${nameSeed}'
   scope: rg
+  dependsOn: [
+    keyVaultModule
+  ]
   params: {
     location: location
     appName: webAppName
@@ -267,6 +287,9 @@ output resourceGroupId string = rg.id
 
 @description('Name of the deployed Resource Group.')
 output resourceGroupName string = rg.name
+
+@description('Name of the Key Vault.')
+output keyVaultName string = keyVaultModule.outputs.keyVaultName
 
 @description('Full HTTPS URL of the Web App.')
 output webAppUrl string = 'https://${webAppModule.outputs.appUrl}'
