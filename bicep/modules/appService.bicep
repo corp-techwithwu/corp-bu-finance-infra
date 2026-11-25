@@ -61,6 +61,7 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
     serverFarmResourceId: planId
     virtualNetworkSubnetId: !empty(subnetId) ? subnetId : null
     httpsOnly: true
+    publicNetworkAccess: 'Disabled'
     managedIdentities: {
       systemAssigned: true
     }

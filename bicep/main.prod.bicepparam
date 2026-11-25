@@ -23,10 +23,10 @@ param keyVaultEnablePurgeProtection = true
 
 // Database Tier Configurations
 param sqlDatabaseName = 'sqldb-finance-prod'
-param sqlDatabaseSkuName = 'B1'
-param sqlDatabaseSkuTier = 'B1'
+param sqlDatabaseSkuName = 'Basic'
+param sqlDatabaseSkuTier = 'Basic'
 param sqlDatabaseCapacity = 5
-param sqlDatabaseMaxSizeBytes = 268435456000 // 250 GB
+param sqlDatabaseMaxSizeBytes = 2147483648 // 2 GB
 param sqlAdminObjectId = 'cd016e03-5f34-404d-bb50-c139970285c3' // guokaswu_gmail.com
 param sqlAdminLogin = 'EntraAdmin-Finance-Prod'
 param sqlAdminPrincipalType = 'Group'

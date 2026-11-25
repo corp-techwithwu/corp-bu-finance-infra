@@ -20,7 +20,7 @@ param hubVnetName string
 param tags object = {}
 
 module network './network.bicep' = {
-  name: 'network-${nameSeed}'
+  name: 'network-inner-${nameSeed}'
   params: {
     location: location
     nameSeed: nameSeed

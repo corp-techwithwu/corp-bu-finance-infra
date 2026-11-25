@@ -59,6 +59,7 @@ param apiAuthAppSecretRef string = ''
 param tags object = {}
 
 var apiPeName = 'pe-api-${nameSeed}'
+var webPeName = 'pe-web-${nameSeed}'
 
 module planModule './appServicePlan.bicep' = {
   name: 'plan-${nameSeed}'
@@ -134,6 +135,19 @@ module apiAppPrivateEndpoint './privateEndpoint.bicep' = {
     privateEndpointName: apiPeName
     subnetId: peSubnetId
     resourceId: apiAppModule.outputs.appId
+    groupId: 'sites'
+    dnsZoneId: appServiceDnsZone.outputs.privateDnsId
+    tags: tags
+  }
+}
+
+module webAppPrivateEndpoint './privateEndpoint.bicep' = {
+  name: 'pe-web-${nameSeed}'
+  params: {
+    location: privateEndpointLocation
+    privateEndpointName: webPeName
+    subnetId: peSubnetId
+    resourceId: webAppModule.outputs.appId
     groupId: 'sites'
     dnsZoneId: appServiceDnsZone.outputs.privateDnsId
     tags: tags
