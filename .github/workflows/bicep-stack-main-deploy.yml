@@ -139,6 +139,7 @@ jobs:
           echo "$ $DEPLOY_CMD"
 
           az stack sub create \
+            --no-color \
             --name "${STACK_NAME}" \
             --location "${LOCATION}" \
             --template-file "${TEMPLATE_FILE}" \

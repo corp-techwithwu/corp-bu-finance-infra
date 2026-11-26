@@ -45,6 +45,7 @@ echo "$ $CMD_STR"
   echo "$ $CMD_STR"
   echo ""
   az stack-whatif sub create \
+    --no-color \
     --name "${WHATIF_NAME}" \
     --stack-id "${STACK_ID}" \
     --location "${LOCATION}" \
