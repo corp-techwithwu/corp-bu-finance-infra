@@ -85,6 +85,7 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
 }
 
 resource authSettings 'Microsoft.Web/sites/config@2025-03-01' = if (useAuth && !empty(authClientId)) {
+  // checkov:skip=CKV_AZURE_222: Public network access is disabled on the parent site by appServiceAvm.
   name: '${appName}/authsettingsV2'
   dependsOn: [
     appServiceAvm
