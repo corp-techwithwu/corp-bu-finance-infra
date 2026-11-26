@@ -43,7 +43,7 @@ module.exports = async ({ github, context, mode = 'pr-whatif' }) => {
 
     const lines = [
       marker,
-      `## 🔍 Deployment Stack What-If: \`${payload.whatif_name}\``,
+      `## 🔍 Deployment Stack What-If: <a href="${payload.portal_whatif_url}">\`${payload.whatif_name}\`</a>`,
       '',
       `- 🔗 **Azure Portal Resource Link:** [${payload.portal_stack_url || 'Open Resource in Azure Portal'}](${payload.portal_stack_url})`,
       `- 📋 **Workflow Run:** [Run #${context.runId}](${payload.run_url})`,
