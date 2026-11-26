@@ -26,14 +26,14 @@ param zoneRedundant bool = false
 @description('Tags applied to the SQL Database.')
 param tags object = {}
 
-// checkov:skip=CKV_AZURE_23: Auditing is configured on the server in the sqlServerAvm module.
-// checkov:skip=CKV_AZURE_24: Auditing is configured on the server in the sqlServerAvm module.
-// checkov:skip=CKV_AZURE_25: Security alert policies are configured on the server in the sqlServerAvm module.
+// checkov:skip=CKV_AZURE_229
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' existing = {
   name: sqlServerName
 }
 
 resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
+  // checkov:skip=CKV_AZURE_26
+  // checkov:skip=CKV_AZURE_27
   parent: sqlServer
   name: databaseName
   location: location

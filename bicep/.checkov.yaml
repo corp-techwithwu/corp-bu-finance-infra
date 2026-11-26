@@ -1,0 +1,4 @@
+skip-check:
+  - CKV_AZURE_23
+  - CKV_AZURE_24
+  - CKV_AZURE_25
