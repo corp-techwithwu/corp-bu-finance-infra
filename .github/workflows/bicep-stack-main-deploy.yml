@@ -125,11 +125,14 @@ jobs:
 
       - name: Deploy Subscription Deployment Stack
         id: deploy
+        env:
+          TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          SUB_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail
 
-          SUB_ID=$(az account show --query id -o tsv)
-          TENANT_ID=$(az account show --query tenantId -o tsv)
+          SUB_ID=$SUB_ID
+          TENANT_ID=$TENANT_ID
           STACK_ID="/subscriptions/${SUB_ID}/providers/Microsoft.Resources/deploymentStacks/${STACK_NAME}"
           PORTAL_STACK_URL="https://portal.azure.com/#@${TENANT_ID}/resource${STACK_ID}"
 
