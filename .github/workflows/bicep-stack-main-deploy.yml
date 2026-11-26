@@ -16,7 +16,6 @@ on:
         type: choice
         options:
           - prod
-          - dev
 
 permissions:
   id-token: write
