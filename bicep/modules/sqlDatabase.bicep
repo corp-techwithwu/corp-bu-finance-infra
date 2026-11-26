@@ -45,6 +45,7 @@ resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   properties: {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
     maxSizeBytes: maxSizeBytes
+    // checkov:skip=CKV_AZURE_229: zone redundant controlled by parameters
     zoneRedundant: zoneRedundant
   }
 }
