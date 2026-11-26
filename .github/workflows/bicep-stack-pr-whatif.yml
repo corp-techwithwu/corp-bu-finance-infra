@@ -1,0 +1,66 @@
+name: Bicep Stack What-If (PR)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  what-if:
+    name: Run Bicep What-If (prod-plan)
+    runs-on: ubuntu-latest
+    environment: prod-plan
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load Environment Configuration
+        run: |
+          chmod +x .github/scripts/*.sh
+          .github/scripts/load-config.sh prod
+        env:
+          PIPELINE_SP_OBJECT_ID_OVERRIDE: ${{ vars.PIPELINE_SP_OBJECT_ID }}
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate & Build Bicep Template
+        run: |
+          az bicep build --file "${TEMPLATE_FILE}" --outfile /tmp/main.json
+
+      - name: Run Stack What-If Preview
+        id: whatif
+        run: |
+          .github/scripts/run-whatif.sh
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+      - name: Upload What-If Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-${{ github.event.pull_request.number }}-whatif
+          path: |
+            /tmp/whatif-raw.txt
+            /tmp/whatif-payload.json
+          retention-days: 7
+
+      - name: Post or Update PR Review Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const postPrComment = require('./.github/scripts/post-pr-comment.js');
+            await postPrComment({ github, context, mode: 'pr-whatif' });

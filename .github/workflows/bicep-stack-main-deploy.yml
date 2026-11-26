@@ -1,0 +1,181 @@
+name: Bicep Stack Deploy (Main -> Prod)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target deployment environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - dev
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  verify-and-compare:
+    name: Re-Run What-If & Compare (prod-plan)
+    runs-on: ubuntu-latest
+    environment: prod-plan
+    outputs:
+      pr_number: ${{ steps.pull_pr.outputs.pr_number }}
+      has_changes: ${{ steps.compare.outputs.has_changes }}
+      has_pr: ${{ steps.compare.outputs.has_pr }}
+      portal_stack_url: ${{ steps.whatif.outputs.portal_stack_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Load Environment Configuration
+        run: |
+          chmod +x .github/scripts/*.sh
+          .github/scripts/load-config.sh "${{ inputs.environment || 'prod' }}"
+        env:
+          PIPELINE_SP_OBJECT_ID_OVERRIDE: ${{ vars.PIPELINE_SP_OBJECT_ID }}
+
+      - name: Pull PR What-If Result
+        id: pull_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pullPrPayload = require('./.github/scripts/pull-pr-payload.js');
+            await pullPrPayload({ github, context, core });
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Re-Run Stack What-If Preview
+        id: whatif
+        run: |
+          .github/scripts/run-whatif.sh
+          cp /tmp/whatif-raw.txt /tmp/main-whatif.txt
+        env:
+          PR_NUMBER: ${{ steps.pull_pr.outputs.pr_number }}
+          HEAD_SHA: ${{ github.sha }}
+
+      - name: Compare What-If & Generate Report
+        id: compare
+        run: |
+          .github/scripts/compare-whatif.sh
+        env:
+          PR_NUMBER: ${{ steps.pull_pr.outputs.pr_number }}
+          PORTAL_STACK_URL: ${{ steps.whatif.outputs.portal_stack_url }}
+
+      - name: Upload Comparison & Full Plan Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-whatif-comparison-${{ github.sha }}
+          path: |
+            /tmp/pr-whatif.txt
+            /tmp/main-whatif.txt
+            /tmp/whatif-diff.patch
+            /tmp/pr-whatif-meta.json
+            /tmp/whatif-payload.json
+            /tmp/comparison-summary.md
+          retention-days: 14
+
+      - name: Post Diff Comment on PR (if PR exists)
+        if: steps.pull_pr.outputs.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const postPrComment = require('./.github/scripts/post-pr-comment.js');
+            await postPrComment({ github, context, mode: 'main-diff' });
+
+  deploy:
+    name: Deploy Deployment Stack (${{ inputs.environment || 'prod' }})
+    needs: verify-and-compare
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'prod' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load Environment Configuration
+        run: |
+          chmod +x .github/scripts/*.sh
+          .github/scripts/load-config.sh "${{ inputs.environment || 'prod' }}"
+        env:
+          PIPELINE_SP_OBJECT_ID_OVERRIDE: ${{ vars.PIPELINE_SP_OBJECT_ID }}
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Subscription Deployment Stack
+        id: deploy
+        run: |
+          set -euo pipefail
+
+          SUB_ID=$(az account show --query id -o tsv)
+          TENANT_ID=$(az account show --query tenantId -o tsv)
+          STACK_ID="/subscriptions/${SUB_ID}/providers/Microsoft.Resources/deploymentStacks/${STACK_NAME}"
+          PORTAL_STACK_URL="https://portal.azure.com/#@${TENANT_ID}/resource${STACK_ID}"
+
+          DEPLOY_CMD="az stack sub create --no-color --name \"${STACK_NAME}\" --location \"${LOCATION}\" --template-file \"${TEMPLATE_FILE}\" --parameters \"${PARAMETERS_FILE}\" --action-on-unmanage \"${AOU}\" --deny-settings-mode \"${DENY}\" --deny-settings-apply-to-child-scopes --deny-settings-excluded-principals \"${PIPELINE_SP_OBJECT_ID}\" --yes"
+
+          echo "Executing Stack Deployment:"
+          echo "$ $DEPLOY_CMD"
+
+          az stack sub create \
+            --no-color \
+            --name "${STACK_NAME}" \
+            --location "${LOCATION}" \
+            --template-file "${TEMPLATE_FILE}" \
+            --parameters "${PARAMETERS_FILE}" \
+            --action-on-unmanage "${AOU}" \
+            --deny-settings-mode "${DENY}" \
+            --deny-settings-apply-to-child-scopes \
+            --deny-settings-excluded-principals "${PIPELINE_SP_OBJECT_ID}" \
+            --yes 2>&1 | tee /tmp/stack-deploy-output.txt
+
+          echo "portal_stack_url=$PORTAL_STACK_URL" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## 🚀 Deployment Stack Deployed Successfully"
+            echo ""
+            echo "- 🏷️ **Stack Name:** \`${STACK_NAME}\`"
+            echo "- 🌍 **Environment:** \`${{ inputs.environment || 'prod' }}\`"
+            echo "- 🔗 **Azure Portal Resource:** [Open Deployment Stack in Azure](${PORTAL_STACK_URL})"
+            echo ""
+            echo "### Executed Command"
+            echo '```bash'
+            echo "$DEPLOY_CMD"
+            echo '```'
+            echo ""
+            echo "<details><summary>Deployment Log Output</summary>"
+            echo ""
+            echo '```text'
+            cat /tmp/stack-deploy-output.txt
+            echo '```'
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Deployment Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stack-deployment-${{ inputs.environment || 'prod' }}-${{ github.sha }}
+          path: /tmp/stack-deploy-output.txt
+          retention-days: 14
