@@ -16,7 +16,6 @@ on:
         type: choice
         options:
           - prod
-          - dev
 
 permissions:
   id-token: write
@@ -128,11 +127,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          SUB_ID=$(az account show --query id -o tsv)
-          TENANT_ID=$(az account show --query tenantId -o tsv)
-          STACK_ID="/subscriptions/${SUB_ID}/providers/Microsoft.Resources/deploymentStacks/${STACK_NAME}"
-          PORTAL_STACK_URL="https://portal.azure.com/#@${TENANT_ID}/resource${STACK_ID}"
-
           DEPLOY_CMD="az stack sub create --no-color --name \"${STACK_NAME}\" --location \"${LOCATION}\" --template-file \"${TEMPLATE_FILE}\" --parameters \"${PARAMETERS_FILE}\" --action-on-unmanage \"${AOU}\" --deny-settings-mode \"${DENY}\" --deny-settings-apply-to-child-scopes --deny-settings-excluded-principals \"${PIPELINE_SP_OBJECT_ID}\" --yes"
 
           echo "Executing Stack Deployment:"
@@ -150,14 +144,11 @@ jobs:
             --deny-settings-excluded-principals "${PIPELINE_SP_OBJECT_ID}" \
             --yes 2>&1 | tee /tmp/stack-deploy-output.txt
 
-          echo "portal_stack_url=$PORTAL_STACK_URL" >> "$GITHUB_OUTPUT"
-
           {
             echo "## 🚀 Deployment Stack Deployed Successfully"
             echo ""
             echo "- 🏷️ **Stack Name:** \`${STACK_NAME}\`"
             echo "- 🌍 **Environment:** \`${{ inputs.environment || 'prod' }}\`"
-            echo "- 🔗 **Azure Portal Resource:** [Open Deployment Stack in Azure](${PORTAL_STACK_URL})"
             echo ""
             echo "### Executed Command"
             echo '```bash'
