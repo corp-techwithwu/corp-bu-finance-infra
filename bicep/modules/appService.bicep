@@ -75,6 +75,9 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
       vnetRouteAllEnabled: true
       alwaysOn: alwaysOn
       http20Enabled: true
+      httpLoggingEnabled: true
+      detailedErrorLoggingEnabled: true
+      failedRequestsTracingEnabled: true
       appSettings: mergedAppSettings
       connectionStrings: connectionStrings
     }

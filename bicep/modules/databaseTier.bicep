@@ -39,6 +39,9 @@ param capacity int = 10
 @description('Maximum database size in bytes.')
 param maxSizeBytes int = 268435456000
 
+@description('Enable zone redundancy when supported by the selected SQL Database SKU.')
+param zoneRedundant bool = false
+
 @description('Disable public network access.')
 param disablePublicNetworkAccess bool = true
 
@@ -76,6 +79,7 @@ module databaseModule './sqlDatabase.bicep' = {
     skuTier: skuTier
     capacity: capacity
     maxSizeBytes: maxSizeBytes
+    zoneRedundant: zoneRedundant
     tags: tags
   }
 }

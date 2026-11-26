@@ -89,6 +89,9 @@ param sqlDatabaseCapacity int = 10
 @description('Maximum database size in bytes.')
 param sqlDatabaseMaxSizeBytes int = 268435456000
 
+@description('Enable SQL Database zone redundancy.')
+param sqlDatabaseZoneRedundant bool = false
+
 @description('Entra ID Admin Object ID for SQL Server.')
 param sqlAdminObjectId string
 
@@ -262,6 +265,7 @@ module databaseTier './modules/databaseTier.bicep' = {
     skuTier: sqlDatabaseSkuTier
     capacity: sqlDatabaseCapacity
     maxSizeBytes: sqlDatabaseMaxSizeBytes
+    zoneRedundant: sqlDatabaseZoneRedundant
     peSubnetId: networkTier.outputs.peSubnetId
     vnetId: networkTier.outputs.vnetId
     tags: baselineTags

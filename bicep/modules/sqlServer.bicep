@@ -13,10 +13,10 @@ param sqlAdministratorLogin string = ''
 param sqlAdministratorLoginPassword string = ''
 
 @description('Object ID of the Entra ID admin principal.')
-param sqlAdminObjectId string
+param sqlAdminObjectId string = ''
 
 @description('Login/UPN or display name of the Entra ID admin principal.')
-param sqlAdminLogin string
+param sqlAdminLogin string = ''
 
 @description('Principal type for Entra ID admin (Application, User, or Group).')
 @allowed([
@@ -35,10 +35,15 @@ param disablePublicNetworkAccess bool = true
 @description('Resource ID of User-Assigned Managed Identity for SQL Server.')
 param userAssignedIdentityId string = ''
 
+@description('Retention period in days for SQL auditing and security alert policies.')
+@minValue(0)
+param retentionDays int = 90
+
 @description('Tags applied to the SQL Server.')
 param tags object = {}
 
 var hasUami = !empty(userAssignedIdentityId)
+var hasEntraAdmin = !empty(sqlAdminObjectId) && !empty(sqlAdminLogin)
 
 module sqlServerAvm 'br/public:avm/res/sql/server:0.21.3' = {
   name: 'avm-sql-${sqlServerName}'
@@ -46,26 +51,40 @@ module sqlServerAvm 'br/public:avm/res/sql/server:0.21.3' = {
     name: sqlServerName
     location: location
     tags: tags
+    minimalTlsVersion: '1.2'
+    publicNetworkAccess: disablePublicNetworkAccess ? 'Disabled' : 'Enabled'
     managedIdentities: hasUami ? {
-      userAssignedResourceIds: [
-        userAssignedIdentityId
-      ]
+      userAssignedResourceIds: [userAssignedIdentityId]
     } : {
       systemAssigned: true
     }
-    minimalTlsVersion: '1.2'
-    publicNetworkAccess: disablePublicNetworkAccess ? 'Disabled' : 'Enabled'
+    primaryUserAssignedIdentityResourceId: hasUami ? userAssignedIdentityId : null
     administratorLogin: !empty(sqlAdministratorLogin) ? sqlAdministratorLogin : null
     administratorLoginPassword: !empty(sqlAdministratorLoginPassword) ? sqlAdministratorLoginPassword : null
-    primaryUserAssignedIdentityResourceId: hasUami ? userAssignedIdentityId : null
-    administrators: !empty(sqlAdminObjectId) ? {
+    administrators: hasEntraAdmin ? {
       administratorType: 'ActiveDirectory'
       azureADOnlyAuthentication: azureAdOnlyAuthentication
       principalType: sqlAdminPrincipalType
       login: sqlAdminLogin
       sid: sqlAdminObjectId
       tenantId: subscription().tenantId
-    } : null
+    } : {
+      azureADOnlyAuthentication: azureAdOnlyAuthentication
+    }
+    auditSettings: {
+      name: 'default'
+      state: 'Enabled'
+      isAzureMonitorTargetEnabled: true
+      retentionDays: retentionDays
+    }
+    securityAlertPolicies: [
+      {
+        name: 'Default'
+        state: 'Enabled'
+        emailAccountAdmins: true
+        retentionDays: retentionDays
+      }
+    ]
   }
 }
 
