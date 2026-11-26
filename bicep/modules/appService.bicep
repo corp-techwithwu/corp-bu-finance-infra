@@ -91,6 +91,7 @@ resource authSettings 'Microsoft.Web/sites/config@2025-03-01' = if (useAuth && !
   // checkov:skip=CKV_AZURE_13: False positive — Easy Auth v2 IS enabled here; Checkov can't correlate this sub-resource back to the AVM-rendered parent site.
   // checkov:skip=CKV_AZURE_66: False positive - resource is authsettingsV2. failed request tracing has been enabled in the appServiceAvm
   // checkov:skip=CKV_AZURE_80: False positive - resource is authsettingsV2. OS version is configured in the appServiceAvm
+  // checkov:skip=CKV_AZURE_65: False positive - resource is authsettingsV2. detailed error messages should be controlled in the appServiceAvm
   name: '${appName}/authsettingsV2'
   dependsOn: [
     appServiceAvm
