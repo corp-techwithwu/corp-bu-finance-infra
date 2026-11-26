@@ -20,7 +20,7 @@ param appServiceLocation = 'westus2'
 param keyVaultSkuName = 'standard'
 param keyVaultSoftDeleteRetentionInDays = 7
 param keyVaultEnablePurgeProtection = false
-param apiAuthAppClientId = '281c4f44-2d4e-4ae7-8ab5-08cfcd43bb60'
+param apiAuthAppClientId = '7bd18851-0b67-41c7-83dd-a615e747e889'
 param apiAuthAppSecret = ''
 
 // Database Tier Configurations
