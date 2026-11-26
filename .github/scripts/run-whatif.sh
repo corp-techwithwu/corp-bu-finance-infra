@@ -34,7 +34,7 @@ PORTAL_STACK_URL="https://portal.azure.com/#@${TENANT_ID}/resource${STACK_ID}"
 TS_UTC=$(date -u +"%Y%m%d-%H%M%S-%3N")
 WHATIF_NAME="wi-${STACK_NAME}-${TS_UTC}-${RUN_ATTEMPT}"
 WHATIF_RESOURCE_ID="${STACK_ID%/deploymentStacks/*}/providers/Microsoft.Resources/deploymentStacksWhatIfResults/${WHATIF_NAME}"
-PORTAL_WHATIF_URL="https://portal.azure.com/${TENANT_ID}/resource/Microsoft.Resources/${WHATIF_RESOURCE_ID}"
+PORTAL_WHATIF_URL="https://portal.azure.com/#@${TENANT_ID}/resource/${WHATIF_RESOURCE_ID}"
 
 CMD_STR="az stack-whatif sub create --no-color --name \"${WHATIF_NAME}\" --stack-id \"${STACK_ID}\" --location \"${LOCATION}\" --template-file \"${TEMPLATE_FILE}\" --parameters \"${PARAMETERS_FILE}\" --action-on-unmanage \"${AOU}\" --deny-settings-mode \"${DENY}\" --validation-level \"ProviderNoRbac\" --deny-settings-apply-to-child-scopes --deny-settings-excluded-principals \"${PIPELINE_SP_OBJECT_ID}\" --retention-interval \"${RETENTION}\""
 
