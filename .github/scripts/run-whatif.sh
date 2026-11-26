@@ -35,7 +35,7 @@ TS_UTC=$(date -u +"%Y%m%d-%H%M%S-%3N")
 WHATIF_NAME="wi-${STACK_NAME}-${TS_UTC}-${RUN_ATTEMPT}"
 WHATIF_RESOURCE_ID="${STACK_ID%/deploymentStacks/*}/providers/Microsoft.Resources/deploymentStacksWhatIfResults/${WHATIF_NAME}"
 
-CMD_STR="az stack-whatif sub create --name \"${WHATIF_NAME}\" --stack-id \"${STACK_ID}\" --location \"${LOCATION}\" --template-file \"${TEMPLATE_FILE}\" --parameters \"${PARAMETERS_FILE}\" --action-on-unmanage \"${AOU}\" --deny-settings-mode \"${DENY}\" --validation-level \"ProviderNoRbac\" --deny-settings-apply-to-child-scopes --deny-settings-excluded-principals \"${PIPELINE_SP_OBJECT_ID}\" --retention-interval \"${RETENTION}\""
+CMD_STR="az stack-whatif sub create --no-color --name \"${WHATIF_NAME}\" --stack-id \"${STACK_ID}\" --location \"${LOCATION}\" --template-file \"${TEMPLATE_FILE}\" --parameters \"${PARAMETERS_FILE}\" --action-on-unmanage \"${AOU}\" --deny-settings-mode \"${DENY}\" --validation-level \"ProviderNoRbac\" --deny-settings-apply-to-child-scopes --deny-settings-excluded-principals \"${PIPELINE_SP_OBJECT_ID}\" --retention-interval \"${RETENTION}\""
 
 echo "Executing What-If command:"
 echo "$ $CMD_STR"
