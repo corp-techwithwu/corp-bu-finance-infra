@@ -86,6 +86,11 @@ module appServiceAvm 'br/public:avm/res/web/site:0.15.1' = {
 
 resource authSettings 'Microsoft.Web/sites/config@2025-03-01' = if (useAuth && !empty(authClientId)) {
   // checkov:skip=CKV_AZURE_222: Public network access is disabled on the parent site by appServiceAvm.
+  // checkov:skip=CKV_AZURE_63: False positive — resource is authsettingsV2. HTTP logging is enabled via appServiceAvm params.siteConfig.httpLoggingEnabled (AVM renders Microsoft.Web/sites/config/logs)
+  // checkov:skip=CKV_AZURE_88: False positive — this is the authsettingsV2 sub-resource, not the site. Azure Files mounts (if needed) belong on the parent site rendered by AVM
+  // checkov:skip=CKV_AZURE_13: False positive — Easy Auth v2 IS enabled here; Checkov can't correlate this sub-resource back to the AVM-rendered parent site.
+  // checkov:skip=CKV_AZURE_66: False positive - resource is authsettingsV2. failed request tracing has been enabled in the appServiceAvm
+  // checkov:skip=CKV_AZURE_80: False positive - resource is authsettingsV2. OS version is configured in the appServiceAvm
   name: '${appName}/authsettingsV2'
   dependsOn: [
     appServiceAvm
