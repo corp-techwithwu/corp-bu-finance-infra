@@ -28,6 +28,7 @@ module network './network.bicep' = {
     subnets: subnets
     hubVnetId: hubVnetId
     hubVnetName: hubVnetName
+    useRemoteGateways: true
     tags: tags
   }
 }
