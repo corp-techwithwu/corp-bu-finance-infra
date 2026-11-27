@@ -37,8 +37,8 @@ param apiSubnetId string
 @description('Subnet ID for Private Endpoints.')
 param peSubnetId string
 
-@description('Virtual Network ID for Private DNS Zone link.')
-param vnetId string
+@description('Resource ID of the existing Private DNS zone.')
+param privateDnsZoneId string
 
 @description('FQDN of the backend SQL Server.')
 param sqlServerFqdn string
@@ -117,15 +117,6 @@ module webAppModule './appService.bicep' = {
   }
 }
 
-module appServiceDnsZone './privateDns.bicep' = {
-  name: 'dns-app-${nameSeed}'
-  params: {
-    dnsZoneName: 'privatelink.azurewebsites.net'
-    vnetId: vnetId
-    tags: tags
-  }
-}
-
 module apiAppPrivateEndpoint './privateEndpoint.bicep' = {
   name: 'pe-api-${nameSeed}'
   params: {
@@ -134,7 +125,7 @@ module apiAppPrivateEndpoint './privateEndpoint.bicep' = {
     subnetId: peSubnetId
     resourceId: apiAppModule.outputs.appId
     groupId: 'sites'
-    dnsZoneId: appServiceDnsZone.outputs.privateDnsId
+    dnsZoneId: privateDnsZoneId
     tags: tags
   }
 }
@@ -147,7 +138,7 @@ module webAppPrivateEndpoint './privateEndpoint.bicep' = {
     subnetId: peSubnetId
     resourceId: webAppModule.outputs.appId
     groupId: 'sites'
-    dnsZoneId: appServiceDnsZone.outputs.privateDnsId
+    dnsZoneId: privateDnsZoneId
     tags: tags
   }
 }

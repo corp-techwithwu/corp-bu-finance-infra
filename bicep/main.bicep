@@ -155,6 +155,15 @@ param hubResourceGroupName string = 'rg-connectivity-hub-prod'
 @description('Hub VNet name.')
 param hubVnetName string = 'vnet-platform-connectivity-prod'
 
+@description('Resource ID of the existing privatelink.azurewebsites.net Private DNS zone.')
+param appServicePrivateDnsZoneId string
+
+@description('Resource ID of the existing privatelink.vaultcore.azure.net Private DNS zone.')
+param keyVaultPrivateDnsZoneId string
+
+@description('Resource ID of the existing privatelink.database.windows.net Private DNS zone.')
+param databasePrivateDnsZoneId string
+
 @description('Additional tags merged with baseline governance tags.')
 param extraTags object = {}
 
@@ -240,7 +249,7 @@ module keyVaultTier './modules/keyVaultTier.bicep' = {
     enablePurgeProtection: keyVaultEnablePurgeProtection
     apiAuthAppSecret: apiAuthAppSecret
     peSubnetId: networkTier.outputs.peSubnetId
-    vnetId: networkTier.outputs.vnetId
+    privateDnsZoneId: keyVaultPrivateDnsZoneId
     tags: baselineTags
   }
 }
@@ -264,7 +273,7 @@ module databaseTier './modules/databaseTier.bicep' = {
     maxSizeBytes: sqlDatabaseMaxSizeBytes
     zoneRedundant: sqlDatabaseZoneRedundant
     peSubnetId: networkTier.outputs.peSubnetId
-    vnetId: networkTier.outputs.vnetId
+    privateDnsZoneId: databasePrivateDnsZoneId
     tags: baselineTags
   }
 }
@@ -287,11 +296,11 @@ module appTier './modules/appTier.bicep' = {
     webSubnetId: networkTier.outputs.webSubnetId
     apiSubnetId: networkTier.outputs.apiSubnetId
     peSubnetId: networkTier.outputs.peSubnetId
-    vnetId: networkTier.outputs.vnetId
     sqlServerFqdn: databaseTier.outputs.serverFullyQualifiedDomainName
     databaseName: databaseTier.outputs.databaseName
     apiAuthAppClientId: apiAuthAppClientId
     apiAuthAppSecretRef: keyVaultTier.outputs.apiAuthAppSecretRef
+    privateDnsZoneId: appServicePrivateDnsZoneId
     tags: baselineTags
   }
 }

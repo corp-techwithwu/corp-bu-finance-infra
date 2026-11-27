@@ -45,8 +45,8 @@ param keyNames array = []
 @description('Subnet resource ID where the Private Endpoint NIC is attached.')
 param peSubnetId string
 
-@description('Virtual Network resource ID for Private DNS Zone link.')
-param vnetId string
+@description('Resource ID of the existing Private DNS zone.')
+param privateDnsZoneId string
 
 @description('Tags applied to Key Vault tier resources.')
 param tags object = {}
@@ -69,15 +69,6 @@ module keyVault './keyVault.bicep' = {
   }
 }
 
-module kvDnsZone './privateDns.bicep' = {
-  name: 'dns-kv-${nameSeed}'
-  params: {
-    dnsZoneName: 'privatelink.vaultcore.azure.net'
-    vnetId: vnetId
-    tags: tags
-  }
-}
-
 module kvPrivateEndpoint './privateEndpoint.bicep' = {
   name: 'pe-kv-${nameSeed}'
   params: {
@@ -86,7 +77,7 @@ module kvPrivateEndpoint './privateEndpoint.bicep' = {
     subnetId: peSubnetId
     resourceId: keyVault.outputs.keyVaultId
     groupId: 'vault'
-    dnsZoneId: kvDnsZone.outputs.privateDnsId
+    dnsZoneId: privateDnsZoneId
     tags: tags
   }
 }

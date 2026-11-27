@@ -61,6 +61,9 @@ param subnets = [
 param hubSubscriptionId = '7f493ff6-603b-4254-a6bf-e9acfc665866'
 param hubResourceGroupName = 'rg-connectivity-hub-prod'
 param hubVnetName = 'vnet-platform-connectivity-prod'
+param appServicePrivateDnsZoneId = '/subscriptions/7f493ff6-603b-4254-a6bf-e9acfc665866/resourceGroups/rg-connectivity-dns-prod-centralus-001/providers/Microsoft.Network/privateDnsZones/privatelink.azurewebsites.net'
+param keyVaultPrivateDnsZoneId = '/subscriptions/7f493ff6-603b-4254-a6bf-e9acfc665866/resourceGroups/rg-connectivity-dns-prod-centralus-001/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net'
+param databasePrivateDnsZoneId = '/subscriptions/7f493ff6-603b-4254-a6bf-e9acfc665866/resourceGroups/rg-connectivity-dns-prod-centralus-001/providers/Microsoft.Network/privateDnsZones/privatelink.database.windows.net'
 
 // Governance & Baseline Tags
 param extraTags = {

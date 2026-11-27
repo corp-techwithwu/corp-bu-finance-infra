@@ -48,8 +48,8 @@ param disablePublicNetworkAccess bool = true
 @description('Subnet resource ID where the Private Endpoint NIC is attached.')
 param peSubnetId string
 
-@description('Virtual Network resource ID for Private DNS Zone link.')
-param vnetId string
+@description('Resource ID of the existing Private DNS zone.')
+param privateDnsZoneId string
 
 @description('Tags applied to database tier resources.')
 param tags object = {}
@@ -84,15 +84,6 @@ module databaseModule './sqlDatabase.bicep' = {
   }
 }
 
-module sqlDnsZone './privateDns.bicep' = {
-  name: 'dns-sql-${nameSeed}'
-  params: {
-    dnsZoneName: 'privatelink${az.environment().suffixes.sqlServerHostname}'
-    vnetId: vnetId
-    tags: tags
-  }
-}
-
 module sqlPrivateEndpoint './privateEndpoint.bicep' = {
   name: 'pe-sql-${nameSeed}'
   params: {
@@ -101,7 +92,7 @@ module sqlPrivateEndpoint './privateEndpoint.bicep' = {
     subnetId: peSubnetId
     resourceId: sqlServerModule.outputs.serverId
     groupId: 'sqlServer'
-    dnsZoneId: sqlDnsZone.outputs.privateDnsId
+    dnsZoneId: privateDnsZoneId
     tags: tags
   }
 }
