@@ -45,7 +45,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2025-09-01' = {
     properties: {
       privateDnsZoneConfigs: [
         {
-          name: 'dns-config-${groupId}'
+          name: 'dns-configs-${groupId}'
           properties: {
             privateDnsZoneId: dnsZoneId
           }
