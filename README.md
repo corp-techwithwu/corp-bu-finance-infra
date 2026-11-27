@@ -63,8 +63,13 @@ All core resources leverage official, production-ready Microsoft Azure Verified 
 bicep/
 ├── bicepconfig.json            # Bicep compiler & linter configuration
 ├── main.bicep                  # Subscription-scoped deployment stack entry point (< 150 lines)
-├── main.dev.bicepparam         # Development environment parameters (locations, SKUs, capacities)
-├── main.prod.bicepparam        # Production environment parameters (locations, SKUs, capacities)
+├── config/
+│   ├── dev/
+│   │   ├── env.dev.json        # Development deployment workflow configuration
+│   │   └── main.dev.bicepparam # Development parameters
+│   └── prod/
+│       ├── env.prod.json       # Production deployment workflow configuration
+│       └── main.prod.bicepparam # Production parameters
 ├── README.md                   # Architecture and operations documentation
 └── modules/
     ├── appTier.bicep           # App service tier orchestrator (AVM Plan + Sites + PE + DNS)
@@ -77,7 +82,6 @@ bicep/
     ├── sqlServer.bicep         # AVM wrapper for Azure SQL Server
     ├── sqlDatabase.bicep       # Azure SQL Database with configurable SKU, tier, and size
     ├── network.bicep           # Spoke Virtual Network and Network Security Group
-    ├── privateDns.bicep        # Private DNS Zones with VNet link auto-registration
     └── privateEndpoint.bicep   # Private Endpoints with DNS Zone Group registration
 ```
 
@@ -85,7 +89,7 @@ bicep/
 
 ## ⚙️ Environment Configurations (`.bicepparam`)
 
-Both `main.prod.bicepparam` and `main.dev.bicepparam` allow independent control over locations, SKUs, capacities, and network spaces:
+Both `bicep/config/prod/main.prod.bicepparam` and `bicep/config/dev/main.dev.bicepparam` allow independent control over locations, SKUs, capacities, and network spaces:
 
 | Configuration Area | Production (`main.prod.bicepparam`) | Development (`main.dev.bicepparam`) |
 | :--- | :--- | :--- |
@@ -113,7 +117,7 @@ az stack-whatif sub create \
   --name "wi-finance-prod" \
   --location "westus2" \
   --template-file "bicep/main.bicep" \
-  --parameters "bicep/main.prod.bicepparam" \
+  --parameters "bicep/config/prod/main.prod.bicepparam" \
   --action-on-unmanage "deleteAll" \
   --deny-settings-mode "denyWriteAndDelete" \
   --validation-level "ProviderNoRbac"
@@ -125,7 +129,7 @@ az stack sub create \
   --name "financeDeploymentStack" \
   --location "westus2" \
   --template-file "bicep/main.bicep" \
-  --parameters "bicep/main.prod.bicepparam" \
+  --parameters "bicep/config/prod/main.prod.bicepparam" \
   --action-on-unmanage "deleteAll" \
   --deny-settings-mode "denyWriteAndDelete" \
   --deny-settings-apply-to-child-scopes \

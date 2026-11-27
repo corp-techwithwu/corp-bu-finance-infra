@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: load-config.sh
-# Purpose: Loads environment configuration from .github/config/env.<env>.json
+# Purpose: Loads environment configuration from bicep/config/<env>/env.<env>.json
 #          and sets GitHub Actions environment variables and step outputs.
 # ==============================================================================
 
 set -euo pipefail
 
 ENV_TARGET="${1:-prod}"
-CONFIG_FILE=".github/config/env.${ENV_TARGET}.json"
+CONFIG_FILE="bicep/config/${ENV_TARGET}/env.${ENV_TARGET}.json"
 
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "::error ::Configuration file $CONFIG_FILE does not exist!"
@@ -41,7 +41,7 @@ get_json_val() {
 STACK_NAME=$(get_json_val "STACK_NAME" "financeDeploymentStack")
 LOCATION=$(get_json_val "LOCATION" "centralus")
 TEMPLATE_FILE=$(get_json_val "TEMPLATE_FILE" "bicep/main.bicep")
-PARAMETERS_FILE=$(get_json_val "PARAMETERS_FILE" "bicep/main.prod.bicepparam")
+PARAMETERS_FILE=$(get_json_val "PARAMETERS_FILE" "bicep/config/${ENV_TARGET}/main.${ENV_TARGET}.bicepparam")
 DEFAULT_SP_OBJ_ID=$(get_json_val "PIPELINE_SP_OBJECT_ID" "00000000-0000-0000-0000-000000000000")
 AOU=$(get_json_val "AOU" "deleteAll")
 DENY=$(get_json_val "DENY" "denyWriteAndDelete")
