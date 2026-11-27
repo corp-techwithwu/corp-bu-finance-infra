@@ -39,6 +39,10 @@ param publicNetworkAccess string = 'Disabled'
 @secure()
 param apiAuthAppSecret string = ''
 
+@description('Web App Entra ID Client Secret.')
+@secure()
+param webAppAadClientSecret string = ''
+
 @description('Optional list of cryptographic key names.')
 param keyNames array = []
 
@@ -64,6 +68,7 @@ module keyVault './keyVault.bicep' = {
     enablePurgeProtection: enablePurgeProtection
     publicNetworkAccess: publicNetworkAccess
     apiAuthAppSecret: apiAuthAppSecret
+    webAppAadClientSecret: webAppAadClientSecret
     keyNames: keyNames
     tags: tags
   }
@@ -93,6 +98,9 @@ output vaultUri string = keyVault.outputs.vaultUri
 
 @description('App Service Key Vault reference for API Auth Client Secret.')
 output apiAuthAppSecretRef string = keyVault.outputs.apiAuthAppSecretRef
+
+@description('App Service Key Vault reference for Web App Auth Client Secret.')
+output webAppAadClientSecretRef string = keyVault.outputs.webAppAadClientSecretRef
 
 @description('Map of all Key Vault secret reference strings.')
 output secretReferences object = keyVault.outputs.secretReferences

@@ -65,11 +65,18 @@ param keyVaultSoftDeleteRetentionInDays int = 90
 param keyVaultEnablePurgeProtection bool = true
 
 @description('API App Entra ID Client ID.')
-param apiAuthAppClientId string = ''
+param apiAppAadClientId string = ''
 
 @description('API App Entra ID Client Secret.')
 @secure()
 param apiAuthAppSecret string = ''
+
+@description('Web App Entra ID Client ID.')
+param webAppAadClientId string = ''
+
+@description('Web App Entra ID Client Secret.')
+@secure()
+param webAppAadClientSecret string = ''
 
 // ==========================================
 // 4. Database Tier Parameters
@@ -248,6 +255,7 @@ module keyVaultTier './modules/keyVaultTier.bicep' = {
     softDeleteRetentionInDays: keyVaultSoftDeleteRetentionInDays
     enablePurgeProtection: keyVaultEnablePurgeProtection
     apiAuthAppSecret: apiAuthAppSecret
+    webAppAadClientSecret: webAppAadClientSecret
     peSubnetId: networkTier.outputs.peSubnetId
     privateDnsZoneId: keyVaultPrivateDnsZoneId
     tags: baselineTags
@@ -298,8 +306,10 @@ module appTier './modules/appTier.bicep' = {
     peSubnetId: networkTier.outputs.peSubnetId
     sqlServerFqdn: databaseTier.outputs.serverFullyQualifiedDomainName
     databaseName: databaseTier.outputs.databaseName
-    apiAuthAppClientId: apiAuthAppClientId
+    apiAppAadClientId: apiAppAadClientId
     apiAuthAppSecretRef: keyVaultTier.outputs.apiAuthAppSecretRef
+    webAppAadClientId: webAppAadClientId
+    webAppAadClientSecretRef: keyVaultTier.outputs.webAppAadClientSecretRef
     privateDnsZoneId: appServicePrivateDnsZoneId
     tags: baselineTags
   }

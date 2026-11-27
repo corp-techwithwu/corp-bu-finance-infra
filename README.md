@@ -42,7 +42,7 @@ The deployment is decoupled into three dedicated Resource Groups, each with its 
 
 ### App runtimes and network isolation
 
-The Web App uses the Node.js 22 LTS stack for the Next.js application and does not enable App Service Easy Auth. The API App uses .NET 10 and Easy Auth v2. The API authentication client ID is configured directly through the environment parameter file; only the API client secret is supported as a Key Vault secret reference.
+The Web App uses the Node.js 22 LTS stack and Easy Auth v2 with public pages excluded. Its delegated login requests the API App's `access_as_user` scope; this is a delegated-permission flow, not an application-permission `/.default` flow. Expose and grant that delegated scope on the API registration. To initiate login and return to the home page, use `/.auth/login/aad?post_login_redirect_uri=/`; Easy Auth otherwise returns to the URL that initiated authentication. The API App uses .NET 10 and Easy Auth v2 with unauthenticated requests returning 401. API and Web App registration secrets are separate secure parameters stored in Key Vault and exposed to their respective App Services through Key Vault references. Supply `webAppAadClientSecret` and `apiAuthAppSecret` securely at deployment time; the checked-in environment parameter files intentionally leave them empty.
 
 Azure SQL and Key Vault are managed PaaS services and are not deployed into customer subnets. Their private endpoints, along with the App Service private endpoints, use the shared `snet-pe` subnet. Private endpoint network policies are disabled only on `snet-pe`.
 

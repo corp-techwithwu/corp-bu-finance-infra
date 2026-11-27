@@ -47,11 +47,18 @@ param sqlServerFqdn string
 param databaseName string
 
 @description('API App Entra ID Client ID.')
-param apiAuthAppClientId string
+param apiAppAadClientId string
 
 @description('Key Vault Secret Reference for API Auth Client Secret.')
 @secure()
 param apiAuthAppSecretRef string = ''
+
+@description('Web App Entra ID Client ID.')
+param webAppAadClientId string
+
+@description('Key Vault Secret Reference for Web App Auth Client Secret.')
+@secure()
+param webAppAadClientSecretRef string = ''
 
 @description('Tags applied to app tier resources.')
 param tags object = {}
@@ -86,8 +93,12 @@ module apiAppModule './appService.bicep' = {
       }
     ]
     useAuth: true
-    authClientId: apiAuthAppClientId
+    authClientId: apiAppAadClientId
     authClientSecret: apiAuthAppSecretRef
+    authAllowedAudiences: [
+      'api://${apiAppAadClientId}'
+      apiAppAadClientId
+    ]
     isApi: true
     tags: tags
   }
@@ -108,10 +119,27 @@ module webAppModule './appService.bicep' = {
       }
       {
         name: 'ApiAuthUri'
-        value: 'api://${apiAuthAppClientId}'
+        value: 'api://${apiAppAadClientId}'
       }
     ]
-    useAuth: false
+    useAuth: true
+    authClientId: webAppAadClientId
+    authClientSecret: webAppAadClientSecretRef
+    authAllowedAudiences: [
+      webAppAadClientId
+    ]
+    loginParameters: [
+      'scope=openid profile email api://${apiAppAadClientId}/access_as_user'
+    ]
+    excludedPaths: [
+      '/'
+      '/welcome'
+      '/privacy'
+      '/aboutus'
+      '/support'
+      '/static/*'
+      '/.auth/*'
+    ]
     isApi: false
     tags: tags
   }

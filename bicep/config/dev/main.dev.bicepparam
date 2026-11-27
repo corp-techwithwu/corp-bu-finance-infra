@@ -20,8 +20,10 @@ param appServiceLocation = 'westus2'
 param keyVaultSkuName = 'standard'
 param keyVaultSoftDeleteRetentionInDays = 7
 param keyVaultEnablePurgeProtection = false
-param apiAuthAppClientId = '7bd18851-0b67-41c7-83dd-a615e747e889'
+param apiAppAadClientId = '7bd18851-0b67-41c7-83dd-a615e747e889'
 param apiAuthAppSecret = ''
+param webAppAadClientId = '8a43db36-1d6f-4b26-a3ee-e64b8a91261d'
+param webAppAadClientSecret = ''
 
 // Database Tier Configurations
 param sqlDatabaseName = 'sqldb-finance-dev'

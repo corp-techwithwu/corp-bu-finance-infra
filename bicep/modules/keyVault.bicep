@@ -35,6 +35,10 @@ param publicNetworkAccess string = 'Disabled'
 @secure()
 param apiAuthAppSecret string = ''
 
+@description('Web App Entra ID Client Secret.')
+@secure()
+param webAppAadClientSecret string = ''
+
 @description('Optional list of cryptographic key names to create in the Key Vault.')
 param keyNames array = []
 
@@ -45,6 +49,10 @@ var rawSecrets = [
   {
     name: 'apiAuthAppSecret'
     value: apiAuthAppSecret
+  }
+  {
+    name: 'webAppAadClientSecret'
+    value: webAppAadClientSecret
   }
 ]
 
@@ -89,7 +97,11 @@ output vaultUri string = keyVaultAvm.outputs.uri
 @description('App Service Key Vault reference for API Auth Client Secret.')
 output apiAuthAppSecretRef string = !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppSecret)' : ''
 
+@description('App Service Key Vault reference for Web App Auth Client Secret.')
+output webAppAadClientSecretRef string = !empty(webAppAadClientSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAppAadClientSecret)' : ''
+
 @description('Map of all Key Vault secret reference strings.')
 output secretReferences object = {
   apiAuthAppSecret: !empty(apiAuthAppSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/apiAuthAppSecret)' : ''
+  webAppAadClientSecret: !empty(webAppAadClientSecret) ? '@Microsoft.KeyVault(SecretUri=${keyVaultAvm.outputs.uri}secrets/webAppAadClientSecret)' : ''
 }

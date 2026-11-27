@@ -31,6 +31,15 @@ param authClientId string = ''
 @secure()
 param authClientSecret string = ''
 
+@description('Allowed token audiences for Easy Auth.')
+param authAllowedAudiences array = []
+
+@description('Additional Entra ID login parameters.')
+param loginParameters array = []
+
+@description('Paths excluded from Easy Auth.')
+param excludedPaths array = []
+
 @description('Whether this app acts as a backend API (returns 401 instead of redirecting to login).')
 param isApi bool = false
 
@@ -102,19 +111,21 @@ resource authSettings 'Microsoft.Web/sites/config@2025-03-01' = if (useAuth && !
         enabled: true
         registration: {
           clientId: authClientId
-          clientSecretSettingName: !empty(authClientSecret) ? clientSecretSettingName : null
+          clientSecretSettingName: clientSecretSettingName
           openIdIssuer: '${az.environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
         }
         validation: {
-          allowedAudiences: [
-            'api://${authClientId}'
-          ]
+          allowedAudiences: authAllowedAudiences
+        }
+        login: {
+          loginParameters: loginParameters
         }
       }
     }
     globalValidation: {
       redirectToProvider: 'AzureActiveDirectory'
       unauthenticatedClientAction: isApi ? 'Return401' : 'RedirectToLoginPage'
+      excludedPaths: excludedPaths
     }
     login: {
       tokenStore: {
