@@ -158,8 +158,6 @@ param hubVnetName string = 'vnet-platform-connectivity-prod'
 @description('Additional tags merged with baseline governance tags.')
 param extraTags object = {}
 
-param deployedAt string = utcNow('yyyy-MM-dd')
-
 // ==========================================
 // Variables & Resource Naming
 // ==========================================
@@ -186,7 +184,6 @@ var baselineTags = union(extraTags, {
   environment: environment
   managedBy: 'bicep-deployment-stack'
   costCenter: toLower('${workload}-${environment}')
-  deployedAt: deployedAt
 })
 
 // ==========================================
