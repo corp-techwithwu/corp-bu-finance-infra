@@ -64,7 +64,6 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-09-01' = {
   }
 }
 
-/*
 resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2025-09-01' = {
   parent: vnet
   name: 'peer-${vnet.name}-to-${hubVnetName}'
@@ -78,7 +77,6 @@ resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeer
     useRemoteGateways: useRemoteGateways
   }
 }
-*/
 
 @description('Resource ID of the spoke Virtual Network.')
 output vnetId string = vnet.id
