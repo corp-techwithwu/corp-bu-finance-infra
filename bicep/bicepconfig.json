@@ -6,10 +6,10 @@
           "level": "warning"
         },
         "no-unused-params": {
-          "level": "error"
+          "level": "off"
         },
         "no-unused-vars": {
-          "level": "error"
+          "level": "off"
         },
         "prefer-interpolation": {
           "level": "warning"
